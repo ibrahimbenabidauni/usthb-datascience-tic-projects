@@ -1,0 +1,64 @@
+You are a Replit AI assistant helping me build a **complete student project management platform** called "TIC Projects Platform".  
+
+I want you to **create a working MVP** with the following specifications:
+
+1. **Project Setup**
+   - Node.js + Express backend
+   - Serve static frontend files from /public
+   - Enable CORS and JSON parsing
+   - Include a package.json with correct dependencies
+   - Make sure the server starts without errors
+
+2. **Database**
+   - Use a simple database (SQLite preferred for Replit) to store:
+     - Users (id, username, email, password hash)
+     - Projects (id, title, description, author_id)
+     - Optional: Reviews table (student reviews per project)
+   - Implement proper table creation/migration on first run
+
+3. **Authentication**
+   - /auth/register: allow students to register
+   - /auth/login: allow students to login
+   - Passwords must be hashed with bcrypt
+   - Use JWT for session/token management
+   - Validate input (no empty usernames/passwords)
+
+4. **Frontend Pages (Responsive & Modern)**
+   - **Home Page** (/index.html)
+     - Explain the idea of the website
+     - Link to Projects page and Login/Register pages
+     - Modern, clean design with cards, buttons, hover effects
+   - **Projects Page** (/projects.html)
+     - List all submitted projects from database
+     - Allow logged-in students to submit new projects via a form
+     - Display project title, description, and author
+   - **Login Page** (/login.html)
+     - Form to login (username/email + password)
+   - **Register Page** (/register.html)
+     - Form to register a new student
+
+5. **Backend Routes**
+   - /projects (GET): return all projects
+   - /projects (POST): allow authenticated users to submit a project
+   - /auth/register and /auth/login as described above
+   - Optional: /reviews (POST/GET) if time allows
+
+6. **Extras / Helpful Features**
+   - Show proper success/error messages on frontend forms
+   - Protect project submission so only logged-in users can submit
+   - Include a logout button that clears JWT
+   - Make frontend fully responsive and user-friendly
+   - Minimal styling using CSS (no frameworks required, optional Bootstrap if needed)
+   - Use environment variables for JWT secret
+
+7. **Final Output**
+   - Corrected package.json with all dependencies
+   - index.js fully functional server
+   - routes/auth.js with working register/login
+   - routes/projects.js with working project CRUD
+   - public/index.html, projects.html, login.html, register.html
+   - Any database initialization scripts
+   - Ready to run in Replit without errors
+
+**Important:**  
+Do not skip any step. Make everything **fully functional**, even if it’s a simple MVP. Make it **look like a real student project platform**. Include comments in the code to explain key parts.
