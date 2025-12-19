@@ -4,12 +4,15 @@ const { Pool } = pkg;
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
 // Initialize schema on startup
 async function initializeSchema() {
   if (!process.env.DATABASE_URL) {
-    console.warn('DATABASE_URL not set. Skipping database initialization. Please set DATABASE_URL on Vercel.');
+    console.warn('DATABASE_URL not set. Skipping database initialization.');
     return;
   }
 
@@ -71,14 +74,16 @@ async function initializeSchema() {
     client.release();
     console.log('Database schema initialized successfully');
   } catch (err) {
-    console.error('Error initializing database schema:', err.message);
+    console.error('Database init error:', err.message);
     if (!process.env.VERCEL) {
       process.exit(1);
     }
   }
 }
 
-// Initialize on module load
-await initializeSchema();
+// Initialize on module load only if DATABASE_URL exists
+if (process.env.DATABASE_URL) {
+  initializeSchema().catch(err => console.error('Failed to initialize schema:', err.message));
+}
 
 export default pool;
