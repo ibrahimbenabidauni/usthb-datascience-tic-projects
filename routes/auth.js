@@ -57,10 +57,16 @@ router.post("/register", async (req, res) => {
       user: { id: userId, username, email }
     });
   } catch (error) {
-    console.error("Registration error:", error.message, error.code, error.detail);
+    console.error("Registration error:", {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      db_url_set: !!process.env.DATABASE_URL
+    });
     res.status(500).json({ 
       error: "Registration failed", 
-      details: process.env.VERCEL ? undefined : error.message 
+      message: error.message || "Unknown error",
+      code: error.code
     });
   }
 });
