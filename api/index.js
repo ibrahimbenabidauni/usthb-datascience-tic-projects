@@ -18,15 +18,15 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "../public")));
 
 app.get("/api", (req, res) => {
   res.json({ message: "TIC Projects Platform API is running", version: "1.0.0" });
 });
 
-import authRoutes from "./routes/auth.js";
-import projectRoutes from "./routes/projects.js";
-import userRoutes from "./routes/users.js";
+import authRoutes from "../routes/auth.js";
+import projectRoutes from "../routes/projects.js";
+import userRoutes from "../routes/users.js";
 
 app.use("/auth", authRoutes);
 app.use("/projects", projectRoutes);
@@ -34,19 +34,8 @@ app.use("/users", userRoutes);
 
 app.get("/{*splat}", (req, res) => {
   if (!req.path.startsWith("/api") && !req.path.startsWith("/auth") && !req.path.startsWith("/projects") && !req.path.startsWith("/users")) {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
+    res.sendFile(path.join(__dirname, "../public", "index.html"));
   }
 });
-
-const PORT = process.env.PORT || 5000;
-
-// Only listen if not in Vercel environment
-if (!process.env.VERCEL) {
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Frontend: http://localhost:${PORT}`);
-    console.log(`API: http://localhost:${PORT}/api`);
-  });
-}
 
 export default app;
