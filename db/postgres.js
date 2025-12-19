@@ -8,6 +8,11 @@ const pool = new Pool({
 
 // Initialize schema on startup
 async function initializeSchema() {
+  if (!process.env.DATABASE_URL) {
+    console.warn('DATABASE_URL not set. Skipping database initialization. Please set DATABASE_URL on Vercel.');
+    return;
+  }
+
   try {
     const client = await pool.connect();
     
@@ -66,8 +71,10 @@ async function initializeSchema() {
     client.release();
     console.log('Database schema initialized successfully');
   } catch (err) {
-    console.error('Error initializing database schema:', err);
-    process.exit(1);
+    console.error('Error initializing database schema:', err.message);
+    if (!process.env.VERCEL) {
+      process.exit(1);
+    }
   }
 }
 
