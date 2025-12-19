@@ -131,3 +131,12 @@ dist
 
 # Replit debugger
 .breakpoints
+
+# User uploaded files (store in cloud storage instead)
+public/uploads/
+*.pdf
+
+# Replit specific
+.local/
+.cache/
+attached_assets/
