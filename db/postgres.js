@@ -81,9 +81,11 @@ async function initializeSchema() {
   }
 }
 
-// Initialize on module load only if DATABASE_URL exists
-if (process.env.DATABASE_URL) {
-  initializeSchema().catch(err => console.error('Failed to initialize schema:', err.message));
-}
+// Initialize on module load - always attempt, just log if fails
+initializeSchema().catch(err => {
+  if (process.env.DATABASE_URL) {
+    console.error('Schema init error:', err.message);
+  }
+});
 
 export default pool;

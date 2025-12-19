@@ -57,8 +57,11 @@ router.post("/register", async (req, res) => {
       user: { id: userId, username, email }
     });
   } catch (error) {
-    console.error("Registration error:", error);
-    res.status(500).json({ error: "Registration failed. Please try again." });
+    console.error("Registration error:", error.message, error.code, error.detail);
+    res.status(500).json({ 
+      error: "Registration failed", 
+      details: process.env.VERCEL ? undefined : error.message 
+    });
   }
 });
 
