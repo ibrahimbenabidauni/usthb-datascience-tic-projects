@@ -22,6 +22,7 @@ if (!process.env.VERCEL && !fs.existsSync(uploadDir)) {
   }
 }
 
+// Multer configuration with error handling for serverless environments
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
@@ -37,6 +38,18 @@ const upload = multer({
   storage,
   limits: { fileSize: 20 * 1024 * 1024 }
 });
+
+// Middleware to handle multer errors gracefully on serverless platforms
+const handleFileUpload = (req, res, next) => {
+  upload.single("file")(req, res, (err) => {
+    if (err) {
+      // On Vercel or if upload fails, just proceed without the file
+      console.warn("File upload skipped:", err.message);
+      req.file = null;
+    }
+    next();
+  });
+};
 
 router.get("/", async (req, res) => {
   try {
@@ -125,7 +138,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.post("/", authenticateToken, upload.single("file"), async (req, res) => {
+router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
   try {
     const { title, description, section, group_number, full_name, matricule } = req.body;
 
