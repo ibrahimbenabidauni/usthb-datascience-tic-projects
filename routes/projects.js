@@ -31,13 +31,15 @@ const upload = multer({
 
 // Multer error middleware
 const handleFileUpload = (req, res, next) => {
-  console.log('[FLOW] 2. Multer Middleware Start');
+  console.log('[TRACE] 2. Multer Middleware Start');
+  console.log('[TRACE] Content-Type:', req.headers['content-type']);
+  
   upload.array("files", 5)(req, res, (err) => {
     if (err) {
-      console.error("[FLOW] Multer Error:", err.message);
+      console.error("[TRACE] Multer Error:", err.message);
       return res.status(400).json({ error: "File upload failed: " + err.message });
     }
-    console.log('[FLOW] 2. Multer Middleware Finish. Files:', req.files ? req.files.length : 0);
+    console.log('[TRACE] 2. Multer Middleware Finish. Files received:', req.files ? req.files.length : 0);
     next();
   });
 };
@@ -141,13 +143,13 @@ router.get("/:id", async (req, res) => {
 
 // POST new project
 router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
-  console.log('[FLOW] 3. Project Route Handler Start');
+  console.log('[TRACE] 3. Project Route Handler Start');
   try {
     const { title, description, section, group_number, full_name, matricule } = req.body;
     const authorId = req.user.id;
-
-    console.log('[FLOW] Request Body Keys:', Object.keys(req.body || {}));
-    console.log(`[POST /projects] Received submission for author_id: ${authorId}, title: ${title}`);
+    
+    console.log('[TRACE] User ID from Token:', authorId);
+    console.log('[TRACE] Body keys after Multer:', Object.keys(req.body || {}));
 
     if (!title || !description) {
       return res.status(400).json({ error: "Title and description are required" });

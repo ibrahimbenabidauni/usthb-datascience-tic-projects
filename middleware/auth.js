@@ -27,11 +27,14 @@ export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  console.log('--- AUTH VERIFICATION START ---');
-  console.log('[FLOW] Auth Header:', authHeader ? 'Present' : 'Missing');
+  console.log('[TRACE] 1. Auth Middleware Start');
+  console.log('[TRACE] Path:', req.path);
+  console.log('[TRACE] Method:', req.method);
+  console.log('[TRACE] Auth Header Present:', !!authHeader);
+  console.log('[TRACE] Token Extract Success:', !!token);
 
   if (!token) {
-    console.error('[FLOW] Auth Failed: No token provided');
+    console.error('[TRACE] Auth Failed: No token found in headers');
     return res.status(401).json({ error: 'No token provided', code: 'MISSING_TOKEN' });
   }
 
