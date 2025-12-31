@@ -22,15 +22,14 @@ if (!process.env.VERCEL && !fs.existsSync(uploadDir)) {
   }
 }
 
-// Multer configuration: Use memory storage for Vercel compatibility
+// Multer configuration: memory storage for Vercel
 const storage = multer.memoryStorage();
-
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit for serverless
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
-// Middleware to handle multer errors
+// Multer error middleware
 const handleFileUpload = (req, res, next) => {
   console.log('[FLOW] 2. Multer Middleware Start');
   upload.array("files", 5)(req, res, (err) => {
@@ -43,10 +42,11 @@ const handleFileUpload = (req, res, next) => {
   });
 };
 
+// GET all projects
 router.get("/", async (req, res) => {
   try {
     const { section, group } = req.query;
-    
+
     let query = `
       SELECT
         p.id,
@@ -75,10 +75,10 @@ router.get("/", async (req, res) => {
         GROUP BY project_id
       ) avg_r ON avg_r.project_id = p.id
     `;
-    
+
     const params = [];
     const conditions = [];
-    
+
     if (section) {
       conditions.push(`p.section = $${params.length + 1}`);
       params.push(section);
@@ -87,13 +87,13 @@ router.get("/", async (req, res) => {
       conditions.push(`p.group_number = $${params.length + 1}`);
       params.push(group);
     }
-    
+
     if (conditions.length > 0) {
       query += " WHERE " + conditions.join(" AND ");
     }
-    
+
     query += " ORDER BY p.created_at DESC";
-    
+
     const result = await pool.query(query, params);
     res.json({ projects: result.rows });
   } catch (err) {
@@ -102,6 +102,7 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET single project by ID
 router.get("/:id", async (req, res) => {
   try {
     const result = await pool.query(`
@@ -138,47 +139,44 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// POST new project
 router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
   console.log('[FLOW] 3. Project Route Handler Start');
   try {
     const { title, description, section, group_number, full_name, matricule } = req.body;
-    console.log('[FLOW] Request Body Keys:', Object.keys(req.body || {}));
+    const authorId = req.user.id;
 
-    // Server-side logging to catch double requests
-    console.log(`[POST /projects] Received submission for author_id: ${req.user.id}, title: ${title}`);
+    console.log('[FLOW] Request Body Keys:', Object.keys(req.body || {}));
+    console.log(`[POST /projects] Received submission for author_id: ${authorId}, title: ${title}`);
 
     if (!title || !description) {
       return res.status(400).json({ error: "Title and description are required" });
     }
+    if (title.length < 3) return res.status(400).json({ error: "Title must be at least 3 characters" });
+    if (description.length < 10) return res.status(400).json({ error: "Description must be at least 10 characters" });
 
-    if (title.length < 3) {
-      return res.status(400).json({ error: "Title must be at least 3 characters" });
-    }
-
-    if (description.length < 10) {
-      return res.status(400).json({ error: "Description must be at least 10 characters" });
-    }
-
-    // Check for "duplicate" requests within the last 5 seconds (debounce at server level)
+    // Debounce duplicate submissions
     const recentRequest = await pool.query(`
       SELECT id FROM projects 
       WHERE author_id = $1 AND title = $2 AND description = $3 
       AND created_at > NOW() - INTERVAL '5 seconds'
-    `, [req.user.id, title, description]);
+    `, [authorId, title, description]);
 
     if (recentRequest.rows.length > 0) {
-      console.warn(`[POST /projects] Duplicate request detected and ignored for author_id: ${req.user.id}`);
+      console.warn(`[POST /projects] Duplicate request detected for author_id: ${authorId}`);
       return res.status(409).json({ error: "Duplicate submission detected. Please wait a few seconds." });
     }
 
+    // Insert project
     const result = await pool.query(`
       INSERT INTO projects (title, description, author_id, section, group_number, full_name, matricule)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING id
-    `, [title, description, req.user.id, section || null, group_number || null, full_name || null, matricule || null]);
+    `, [title, description, authorId, section || null, group_number || null, full_name || null, matricule || null]);
 
     const projectId = result.rows[0].id;
 
+    // Handle uploaded files
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -188,14 +186,15 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
         const fullPath = path.join(uploadDir, fileName);
 
         try {
-          fs.writeFileSync(fullPath, file.buffer);
-          
-          console.log(`[POST /projects] Saved file: ${file.originalname} for project_id: ${projectId}`);
-          
+          // Only write to disk if not Vercel
+          if (!process.env.VERCEL) fs.writeFileSync(fullPath, file.buffer);
+
           await pool.query(
             `INSERT INTO project_files (project_id, file_path, file_type, file_size, original_name) VALUES ($1, $2, $3, $4, $5)`,
             [projectId, filePath, file.mimetype, file.size, file.originalname]
           );
+
+          console.log(`[POST /projects] Saved file: ${file.originalname} for project_id: ${projectId}`);
         } catch (fsErr) {
           console.error("[POST /projects] File save error:", fsErr);
         }
@@ -224,26 +223,19 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
   }
 });
 
+// PUT update project
 router.put("/:id", authenticateToken, async (req, res) => {
   try {
     const { title, description, section, group_number, full_name, matricule } = req.body;
     const projectId = req.params.id;
 
-    if (!projectId || projectId === "null") {
-      return res.status(400).json({ error: "Invalid project ID" });
-    }
+    if (!projectId || projectId === "null") return res.status(400).json({ error: "Invalid project ID" });
 
     const projectResult = await pool.query("SELECT * FROM projects WHERE id = $1", [projectId]);
-
-    if (projectResult.rows.length === 0) {
-      return res.status(404).json({ error: "Project not found" });
-    }
+    if (projectResult.rows.length === 0) return res.status(404).json({ error: "Project not found" });
 
     const project = projectResult.rows[0];
-
-    if (project.author_id !== req.user.id) {
-      return res.status(403).json({ error: "You can only edit your own projects" });
-    }
+    if (project.author_id !== req.user.id) return res.status(403).json({ error: "You can only edit your own projects" });
 
     await pool.query(`
       UPDATE projects SET title = $1, description = $2, section = $3, group_number = $4, full_name = $5, matricule = $6
@@ -257,20 +249,15 @@ router.put("/:id", authenticateToken, async (req, res) => {
   }
 });
 
+// DELETE project
 router.delete("/:id", authenticateToken, async (req, res) => {
   try {
     const projectId = req.params.id;
     const projectResult = await pool.query("SELECT * FROM projects WHERE id = $1", [projectId]);
-
-    if (projectResult.rows.length === 0) {
-      return res.status(404).json({ error: "Project not found" });
-    }
+    if (projectResult.rows.length === 0) return res.status(404).json({ error: "Project not found" });
 
     const project = projectResult.rows[0];
-
-    if (project.author_id !== req.user.id) {
-      return res.status(403).json({ error: "You can only delete your own projects" });
-    }
+    if (project.author_id !== req.user.id) return res.status(403).json({ error: "You can only delete your own projects" });
 
     await pool.query("DELETE FROM reviews WHERE project_id = $1", [projectId]);
     await pool.query("DELETE FROM project_files WHERE project_id = $1", [projectId]);
@@ -283,19 +270,16 @@ router.delete("/:id", authenticateToken, async (req, res) => {
   }
 });
 
+// POST review
 router.post("/:id/reviews", authenticateToken, async (req, res) => {
   try {
     const { rating, comment } = req.body;
     const projectId = req.params.id;
 
-    if (!rating || rating < 1 || rating > 5) {
-      return res.status(400).json({ error: "Rating must be between 1 and 5" });
-    }
+    if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: "Rating must be between 1 and 5" });
 
     const projectResult = await pool.query("SELECT * FROM projects WHERE id = $1", [projectId]);
-    if (projectResult.rows.length === 0) {
-      return res.status(404).json({ error: "Project not found" });
-    }
+    if (projectResult.rows.length === 0) return res.status(404).json({ error: "Project not found" });
 
     const existingReviewResult = await pool.query(
       "SELECT * FROM reviews WHERE project_id = $1 AND reviewer_id = $2",
@@ -321,6 +305,7 @@ router.post("/:id/reviews", authenticateToken, async (req, res) => {
   }
 });
 
+// GET project reviews
 router.get("/:id/reviews", async (req, res) => {
   try {
     const projectId = req.params.id;
@@ -339,6 +324,7 @@ router.get("/:id/reviews", async (req, res) => {
   }
 });
 
+// GET my review
 router.get("/:id/my-review", authenticateToken, async (req, res) => {
   try {
     const projectId = req.params.id;
