@@ -150,6 +150,9 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
   try {
     const { title, description, section, group_number, full_name, matricule } = req.body;
 
+    // Server-side logging to catch double requests
+    console.log(`[POST /projects] Received submission for author_id: ${req.user.id}, title: ${title}`);
+
     if (!title || !description) {
       return res.status(400).json({ error: "Title and description are required" });
     }
@@ -160,6 +163,18 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
 
     if (description.length < 10) {
       return res.status(400).json({ error: "Description must be at least 10 characters" });
+    }
+
+    // Check for "duplicate" requests within the last 5 seconds (debounce at server level)
+    const recentRequest = await pool.query(`
+      SELECT id FROM projects 
+      WHERE author_id = $1 AND title = $2 AND description = $3 
+      AND created_at > NOW() - INTERVAL '5 seconds'
+    `, [req.user.id, title, description]);
+
+    if (recentRequest.rows.length > 0) {
+      console.warn(`[POST /projects] Duplicate request detected and ignored for author_id: ${req.user.id}`);
+      return res.status(409).json({ error: "Duplicate submission detected. Please wait a few seconds." });
     }
 
     const result = await pool.query(`
@@ -177,8 +192,7 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
         const fileSize = file.size;
         const originalName = file.originalname;
         
-        // Log file info for debugging
-        console.log(`Inserting file: ${originalName}, size: ${fileSize}, type: ${fileType}`);
+        console.log(`[POST /projects] Inserting file: ${originalName} for project_id: ${projectId}`);
         
         await pool.query(
           `INSERT INTO project_files (project_id, file_path, file_type, file_size, original_name) VALUES ($1, $2, $3, $4, $5)`,
@@ -204,7 +218,7 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
 
     res.status(201).json({ message: "Project created successfully", project: projectResult.rows[0] });
   } catch (err) {
-    console.error(err);
+    console.error("[POST /projects] Error:", err);
     res.status(500).json({ error: "Failed to create project" });
   }
 });

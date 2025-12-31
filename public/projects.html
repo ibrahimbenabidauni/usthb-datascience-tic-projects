@@ -640,12 +640,16 @@
 
       // Prepare UI for upload
       submitBtn.disabled = true;
+      submitBtn.classList.add('btn-loading'); // UI feedback
       submitBtn.textContent = 'Uploading...';
       messageDiv.textContent = '';
       progressContainer.style.display = 'block';
       progressBar.style.width = '0%';
       percentageText.textContent = '0%';
       statusText.textContent = 'Uploading project...';
+
+      // Log submission to catch double fires in console
+      console.log('Project submission started. Button disabled:', submitBtn.disabled);
 
       const xhr = new XMLHttpRequest();
 
