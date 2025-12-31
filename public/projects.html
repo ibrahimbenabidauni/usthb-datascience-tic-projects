@@ -117,8 +117,11 @@
           </div>
 
           <div class="form-group">
-            <label for="file">Upload File (optional)</label>
-            <input type="file" id="file" name="file" accept=".pdf,.doc,.docx,.zip,.rar,.txt">
+            <label for="files">Upload Files (Max 5 files, 50MB total)</label>
+            <input type="file" id="files" name="files" accept=".pdf,.doc,.docx,.zip,.rar,.txt,.mp4,.mov,.avi" multiple>
+            <div id="storageLimitInfo" style="font-size: 0.8rem; color: var(--gray-500); margin-top: 5px;">
+              <p>Max Storage: ~3.33 MB per person (Free Neon DB limit for 300 users)</p>
+            </div>
           </div>
 
           <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Project</button>
@@ -297,11 +300,19 @@
               
               <p>${escapeHtml(project.description)}</p>
 
-              ${project.file_path ? `
+              ${project.files && Array.isArray(project.files) ? `
+                <div class="project-files" style="margin-bottom: 16px;">
+                  ${project.files.map(file => file && file.file_path ? `
+                    <a href="${file.file_path}" target="_blank" style="display:flex;align-items:center;gap:8px;color:var(--primary);font-weight:600;margin-bottom:4px;font-size:0.9rem;">
+                      ${file.file_type && file.file_type.includes('video') ? '🎥' : '📎'} View / Download ${file.file_type && file.file_type.includes('video') ? 'Video' : 'File'}
+                    </a>
+                  ` : '').join('')}
+                </div>
+              ` : (project.file_path ? `
                 <a href="${project.file_path}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;color:var(--primary);font-weight:600;margin-bottom:16px;">
                   📎 View / Download File
                 </a>
-              ` : ''}
+              ` : '')}
 
               <div class="rating-display">
                 <div class="rating-stars">
@@ -721,11 +732,19 @@
               
               <p>${escapeHtml(project.description)}</p>
 
-              ${project.file_path ? `
+              ${project.files && Array.isArray(project.files) ? `
+                <div class="project-files" style="margin-bottom: 16px;">
+                  ${project.files.map(file => file && file.file_path ? `
+                    <a href="${file.file_path}" target="_blank" style="display:flex;align-items:center;gap:8px;color:var(--primary);font-weight:600;margin-bottom:4px;font-size:0.9rem;">
+                      ${file.file_type && file.file_type.includes('video') ? '🎥' : '📎'} View / Download ${file.file_type && file.file_type.includes('video') ? 'Video' : 'File'}
+                    </a>
+                  ` : '').join('')}
+                </div>
+              ` : (project.file_path ? `
                 <a href="${project.file_path}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;color:var(--primary);font-weight:600;margin-bottom:16px;">
                   📎 View / Download File
                 </a>
-              ` : ''}
+              ` : '')}
 
               <div class="rating-display">
                 <div class="rating-stars">

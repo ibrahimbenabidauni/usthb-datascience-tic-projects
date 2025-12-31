@@ -36,16 +36,16 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 20 * 1024 * 1024 }
+  limits: { fileSize: 50 * 1024 * 1024 } // Increased to 50MB for videos
 });
 
 // Middleware to handle multer errors gracefully on serverless platforms
 const handleFileUpload = (req, res, next) => {
-  upload.single("file")(req, res, (err) => {
+  upload.array("files", 5)(req, res, (err) => {
     if (err) {
-      // On Vercel or if upload fails, just proceed without the file
+      // On Vercel or if upload fails, just proceed without the files
       console.warn("File upload skipped:", err.message);
-      req.file = null;
+      req.files = [];
     }
     next();
   });
@@ -162,20 +162,26 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
 
     const projectId = result.rows[0].id;
 
-    if (req.file) {
-      const filePath = `/uploads/${req.file.filename}`;
-      await pool.query(
-        `INSERT INTO project_files (project_id, file_path) VALUES ($1, $2)`,
-        [projectId, filePath]
-      );
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const filePath = `/uploads/${file.filename}`;
+        const fileType = file.mimetype;
+        const fileSize = file.size;
+        await pool.query(
+          `INSERT INTO project_files (project_id, file_path, file_type, file_size) VALUES ($1, $2, $3, $4)`,
+          [projectId, filePath, fileType, fileSize]
+        );
+      }
     }
 
     const projectResult = await pool.query(`
-      SELECT projects.*, users.username AS author_name, project_files.file_path
+      SELECT projects.*, users.username AS author_name, 
+             JSON_AGG(JSON_BUILD_OBJECT('file_path', project_files.file_path, 'file_type', project_files.file_type)) as files
       FROM projects
       JOIN users ON users.id = projects.author_id
       LEFT JOIN project_files ON project_files.project_id = projects.id
       WHERE projects.id = $1
+      GROUP BY projects.id, users.username
     `, [projectId]);
 
     res.status(201).json({ message: "Project created successfully", project: projectResult.rows[0] });
