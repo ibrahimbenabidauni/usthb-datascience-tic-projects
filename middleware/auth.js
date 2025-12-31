@@ -1,17 +1,18 @@
 import jwt from 'jsonwebtoken';
 
-const NEW_SECRET = process.env.JWT_SECRET || null;
-const OLD_SECRET = 'tic-projects-platform-secret-key-2025'; // fallback
-
-if (!NEW_SECRET) {
-  console.warn('[WARNING] NEW_SECRET is undefined. Make sure JWT_SECRET is set in Vercel Environment Variables.');
+// Lazy load secrets at runtime
+function getSecrets() {
+  const secrets = [];
+  if (process.env.JWT_SECRET) secrets.push(process.env.JWT_SECRET);
+  secrets.push('tic-projects-platform-secret-key-2025'); // fallback old secret
+  return secrets;
 }
 
 export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = authHeader?.split(' ')[1];
 
-  console.log('--- BACKEND AUTH START ---');
+  console.log('--- AUTH CHECK ---');
   console.log('[FLOW] Auth Header:', authHeader ? 'Present' : 'Missing');
 
   if (!token) {
@@ -19,23 +20,23 @@ export const authenticateToken = (req, res, next) => {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
   }
 
+  const secrets = getSecrets();
   let decoded = null;
   let lastError = null;
 
-  for (const secret of [NEW_SECRET, OLD_SECRET]) {
-    if (!secret) continue; // skip undefined secrets
+  for (const secret of secrets) {
     try {
       decoded = jwt.verify(token, secret);
-      console.log(`[FLOW] Token verified with secret: ${secret === NEW_SECRET ? 'NEW_SECRET' : 'OLD_SECRET'}`);
+      console.log(`[FLOW] Token verified using secret: ${secret === process.env.JWT_SECRET ? 'NEW_SECRET' : 'OLD_SECRET'}`);
       break;
     } catch (err) {
-      console.warn(`[FLOW] Token verification failed with secret ${secret === NEW_SECRET ? 'NEW_SECRET' : 'OLD_SECRET'}: ${err.message}`);
       lastError = err;
+      console.warn(`[FLOW] Token verification failed with secret ${secret === process.env.JWT_SECRET ? 'NEW_SECRET' : 'OLD_SECRET'}: ${err.message}`);
     }
   }
 
   if (!decoded) {
-    console.error('[FLOW] Auth Failed: Invalid or expired token');
+    console.error('[FLOW] Auth Failed: Invalid or expired token', lastError?.message);
     return res.status(403).json({ error: 'Invalid or expired token.', details: lastError?.message });
   }
 
