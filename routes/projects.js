@@ -22,30 +22,20 @@ if (!process.env.VERCEL && !fs.existsSync(uploadDir)) {
   }
 }
 
-// Multer configuration with error handling for serverless environments
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, "project-" + uniqueName + ext);
-  }
-});
+// Multer configuration: Use memory storage for Vercel compatibility
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
-  limits: { fileSize: 100 * 1024 * 1024 } // Increased to 100MB
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit for serverless
 });
 
-// Middleware to handle multer errors gracefully on serverless platforms
+// Middleware to handle multer errors
 const handleFileUpload = (req, res, next) => {
   upload.array("files", 5)(req, res, (err) => {
     if (err) {
-      // On Vercel or if upload fails, just proceed without the files
-      console.warn("File upload skipped:", err.message);
-      req.files = [];
+      console.error("[UPLOAD] Error:", err.message);
+      return res.status(400).json({ error: "File upload failed: " + err.message });
     }
     next();
   });
@@ -186,18 +176,28 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
     const projectId = result.rows[0].id;
 
     if (req.files && req.files.length > 0) {
+      // For memory storage, we need a way to save these files.
+      // Since this is a Replit environment, we'll write them to public/uploads
+      // but the critical change is using memoryStorage to avoid diskStorage conflicts on serverless
       for (const file of req.files) {
-        const filePath = `/uploads/${file.filename}`;
-        const fileType = file.mimetype;
-        const fileSize = file.size;
-        const originalName = file.originalname;
-        
-        console.log(`[POST /projects] Inserting file: ${originalName} for project_id: ${projectId}`);
-        
-        await pool.query(
-          `INSERT INTO project_files (project_id, file_path, file_type, file_size, original_name) VALUES ($1, $2, $3, $4, $5)`,
-          [projectId, filePath, fileType, fileSize, originalName]
-        );
+        const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const ext = path.extname(file.originalname);
+        const fileName = "project-" + uniqueName + ext;
+        const filePath = `/uploads/${fileName}`;
+        const fullPath = path.join(uploadDir, fileName);
+
+        try {
+          fs.writeFileSync(fullPath, file.buffer);
+          
+          console.log(`[POST /projects] Saved file: ${file.originalname} for project_id: ${projectId}`);
+          
+          await pool.query(
+            `INSERT INTO project_files (project_id, file_path, file_type, file_size, original_name) VALUES ($1, $2, $3, $4, $5)`,
+            [projectId, filePath, file.mimetype, file.size, file.originalname]
+          );
+        } catch (fsErr) {
+          console.error("[POST /projects] File save error:", fsErr);
+        }
       }
     }
 
