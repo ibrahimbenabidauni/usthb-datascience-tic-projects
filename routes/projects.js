@@ -228,6 +228,10 @@ router.put("/:id", authenticateToken, async (req, res) => {
     const { title, description, section, group_number, full_name, matricule } = req.body;
     const projectId = req.params.id;
 
+    if (!projectId || projectId === "null") {
+      return res.status(400).json({ error: "Invalid project ID" });
+    }
+
     const projectResult = await pool.query("SELECT * FROM projects WHERE id = $1", [projectId]);
 
     if (projectResult.rows.length === 0) {

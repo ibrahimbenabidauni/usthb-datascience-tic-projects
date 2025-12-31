@@ -789,6 +789,13 @@
       const messageDiv = document.getElementById('editMessage');
       const formData = new FormData(document.getElementById('editForm'));
       const data = Object.fromEntries(formData);
+      
+      // Ensure we are using the correct project ID
+      if (!editingProjectId) {
+        messageDiv.className = 'message error';
+        messageDiv.textContent = 'Error: No project selected for editing';
+        return;
+      }
 
       try {
         const response = await fetch(`/projects/${editingProjectId}`, {
