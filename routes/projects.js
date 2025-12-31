@@ -72,16 +72,16 @@ router.get("/", async (req, res) => {
         f.files
       FROM projects p
       JOIN users u ON u.id = p.author_id
-      LEFT JOIN (
-        SELECT project_id, JSON_AGG(JSONB_BUILD_OBJECT('file_path', file_path, 'file_type', file_type, 'original_name', original_name)) as files
-        FROM project_files
-        GROUP BY project_id
-      ) f ON f.project_id = p.id
-      LEFT JOIN (
-        SELECT project_id, AVG(rating) as rating, COUNT(id) as review_count
-        FROM reviews
-        GROUP BY project_id
-      ) avg_r ON avg_r.project_id = p.id
+      LEFT JOIN LATERAL (
+        SELECT JSON_AGG(JSONB_BUILD_OBJECT('file_path', pf.file_path, 'file_type', pf.file_type, 'original_name', pf.original_name)) as files
+        FROM project_files pf
+        WHERE pf.project_id = p.id
+      ) f ON true
+      LEFT JOIN LATERAL (
+        SELECT AVG(r.rating) as rating, COUNT(r.id) as review_count
+        FROM reviews r
+        WHERE r.project_id = p.id
+      ) avg_r ON true
     `;
     
     const params = [];

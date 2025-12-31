@@ -293,11 +293,21 @@
         const response = await fetch(url);
         const data = await response.json();
         
-        // Store projects globally for editing
-        window.currentProjects = data.projects || [];
+        // Safety net: Client-side deduplication using a Map
+        const projectMap = new Map();
+        if (data.projects) {
+          data.projects.forEach(p => {
+            if (!projectMap.has(p.id)) {
+              projectMap.set(p.id, p);
+            }
+          });
+        }
+        
+        const uniqueProjects = Array.from(projectMap.values());
+        window.currentProjects = uniqueProjects;
 
-        if (data.projects && data.projects.length > 0) {
-          container.innerHTML = data.projects.map((project, index) => `
+        if (uniqueProjects.length > 0) {
+          container.innerHTML = uniqueProjects.map((project, index) => `
             <div class="card project-card" style="animation-delay: ${index * 0.1}s">
               <h3>${escapeHtml(project.title)}</h3>
               
@@ -315,11 +325,11 @@
               
               <p>${escapeHtml(project.description)}</p>
 
-              ${project.files && Array.isArray(project.files) ? `
+              ${project.files && Array.isArray(project.files) && project.files[0] !== null ? `
                 <div class="project-files" style="margin-bottom: 16px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px;">
                   <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #666;">Project Files:</h4>
                   <div style="display: flex; flex-direction: column; gap: 8px;">
-                    ${project.files.map((file, fIdx) => file && file.file_path ? `
+                    ${project.files.map((file) => file && file.file_path ? `
                       <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #eee;">
                         <span style="font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">
                           ${file.file_type && file.file_type.includes('video') ? '🎥' : '📎'} ${file.original_name || file.file_path.split('/').pop().replace(/^project-\d+-\d+-/, '')}
@@ -329,17 +339,7 @@
                     ` : '').join('')}
                   </div>
                 </div>
-              ` : (project.file_path ? `
-                <div class="project-files" style="margin-bottom: 16px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px;">
-                  <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #666;">Project File:</h4>
-                  <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #eee;">
-                    <span style="font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">
-                      📎 ${project.file_path.split('/').pop().replace(/^project-\d+-\d+-/, '')}
-                    </span>
-                    <a href="${project.file_path}" target="_blank" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">View</a>
-                  </div>
-                </div>
-              ` : '')}
+              ` : ''}
 
               <div class="rating-display">
                 <div class="rating-stars">
@@ -371,6 +371,7 @@
           `;
         }
       } catch (error) {
+        console.error('Load projects error:', error);
         container.innerHTML = `
           <div class="empty-state" style="grid-column: 1/-1;">
             <h3>Error loading projects</h3>
