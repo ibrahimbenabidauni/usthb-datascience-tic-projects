@@ -165,12 +165,22 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
     const recentRequest = await pool.query(`
       SELECT id FROM projects 
       WHERE author_id = $1 AND title = $2 AND description = $3 
-      AND created_at > NOW() - INTERVAL '5 seconds'
+      AND created_at > NOW() - INTERVAL '30 seconds'
     `, [authorId, title, description]);
 
     if (recentRequest.rows.length > 0) {
-      console.warn(`[POST /projects] Duplicate request detected for author_id: ${authorId}`);
-      return res.status(409).json({ error: "Duplicate submission detected. Please wait a few seconds." });
+      // If we found a recent submission, check if it was actually successful
+      // For now, let's just return the existing project to the user instead of an error
+      // to handle the double-submission gracefully
+      const existingProject = await pool.query(`
+        SELECT p.*, u.username AS author_name
+        FROM projects p
+        JOIN users u ON u.id = p.author_id
+        WHERE p.id = $1
+      `, [recentRequest.rows[0].id]);
+      
+      console.warn(`[POST /projects] Duplicate request detected for author_id: ${authorId}. Returning existing project.`);
+      return res.status(201).json({ message: "Project already submitted", project: existingProject.rows[0] });
     }
 
     // Insert project
