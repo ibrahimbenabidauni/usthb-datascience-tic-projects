@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 
-const NEW_SECRET = process.env.JWT_SECRET;
-const OLD_SECRET = 'tic-projects-platform-secret-key-2025'; // old fallback
+export const JWT_SECRET = process.env.JWT_SECRET;
+const OLD_SECRET = 'tic-projects-platform-secret-key-2025'; // fallback secret
 
 export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -16,7 +16,7 @@ export const authenticateToken = (req, res, next) => {
   }
 
   let decoded = null;
-  for (const secret of [NEW_SECRET, OLD_SECRET]) {
+  for (const secret of [JWT_SECRET, OLD_SECRET]) {
     try {
       decoded = jwt.verify(token, secret);
       break; // stop at first secret that works
