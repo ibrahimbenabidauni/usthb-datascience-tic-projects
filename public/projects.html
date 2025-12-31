@@ -725,11 +725,13 @@
 
     function openEditModal(projectId) {
       editingProjectId = projectId;
-      // Safety check: ensure window.currentProjects exists and is populated
       const projectList = window.currentProjects || [];
       const project = projectList.find(p => p.id === projectId);
       
-      if (!project || (user && parseInt(user.id) !== project.author_id)) {
+      console.log('Editing project:', project);
+      console.log('Current user:', user);
+      
+      if (!project || (user && parseInt(user.id) !== parseInt(project.author_id))) {
         alert('Unauthorized: You can only edit your own projects');
         return;
       }
