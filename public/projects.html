@@ -293,17 +293,16 @@
         const response = await fetch(url);
         const data = await response.json();
         
-        // Safety net: Client-side deduplication using a Map
-        const projectMap = new Map();
+        const uniqueProjects = [];
+        const projectIds = new Set();
         if (data.projects) {
           data.projects.forEach(p => {
-            if (!projectMap.has(p.id)) {
-              projectMap.set(p.id, p);
+            if (!projectIds.has(p.id)) {
+              uniqueProjects.push(p);
+              projectIds.add(p.id);
             }
           });
         }
-        
-        const uniqueProjects = Array.from(projectMap.values());
         window.currentProjects = uniqueProjects;
 
         if (uniqueProjects.length > 0) {
