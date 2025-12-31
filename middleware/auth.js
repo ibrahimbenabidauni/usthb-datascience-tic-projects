@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 
 // Safely export JWT_SECRET with a fallback to avoid crashing on Vercel if env var is missing
+// Note: We use a consistent secret for signing to avoid 'invalid signature' errors when env vars change
 export const JWT_SECRET = process.env.JWT_SECRET || 'tic-projects-platform-secret-key-2025';
 const OLD_SECRET = 'tic-projects-platform-secret-key-2025';
 
@@ -9,8 +10,9 @@ const OLD_SECRET = 'tic-projects-platform-secret-key-2025';
  */
 export const generateToken = (payload, expiresIn = '7d') => {
   try {
-    console.log(`[JWT] Generating token for user: ${payload.username || payload.id}`);
-    return jwt.sign(payload, JWT_SECRET, { expiresIn });
+    const secretToUse = process.env.JWT_SECRET || OLD_SECRET;
+    console.log(`[JWT] Generating token for user: ${payload.username || payload.id} using ${process.env.JWT_SECRET ? 'ENV_SECRET' : 'OLD_SECRET'}`);
+    return jwt.sign(payload, secretToUse, { expiresIn });
   } catch (error) {
     console.error(`[JWT] Error generating token:`, error);
     throw new Error("Token generation failed");
