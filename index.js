@@ -28,6 +28,16 @@ import authRoutes from "./routes/auth.js";
 import projectRoutes from "./routes/projects.js";
 import userRoutes from "./routes/users.js";
 
+// Debugging: Log all incoming requests for production tracing
+app.use((req, res, next) => {
+  if (req.path === '/projects' && req.method === 'POST') {
+    console.log(`[REQUEST TRACE] ${req.method} ${req.path}`);
+    console.log(`[REQUEST TRACE] Content-Type: ${req.headers['content-type']}`);
+    console.log(`[REQUEST TRACE] Auth Header present: ${!!req.headers['authorization']}`);
+  }
+  next();
+});
+
 app.use("/auth", authRoutes);
 app.use("/projects", projectRoutes);
 app.use("/users", userRoutes);
