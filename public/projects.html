@@ -293,18 +293,21 @@
 
       try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error('Network response was not ok');
+        if (!response.ok) {
+           const errText = await response.text();
+           console.error('[ERROR] Fetch failed:', response.status, errText);
+           throw new Error(`Server returned ${response.status}`);
+        }
         const data = await response.json();
         
         console.log('[DEBUG] Received projects:', data.projects);
         
-        const uniqueProjects = data.projects || [];
-        window.currentProjects = uniqueProjects;
-        currentProjects = uniqueProjects;
+        const projectsFromData = Array.isArray(data.projects) ? data.projects : [];
+        window.currentProjects = projectsFromData;
+        currentProjects = projectsFromData;
 
-        if (uniqueProjects.length > 0) {
-          container.innerHTML = uniqueProjects.map((project, index) => {
-            // Safety check for null project
+        if (projectsFromData.length > 0) {
+          container.innerHTML = projectsFromData.map((project, index) => {
             if (!project) return '';
             
             return `
@@ -375,7 +378,7 @@
         container.innerHTML = `
           <div class="empty-state" style="grid-column: 1/-1;">
             <h3>Error loading projects</h3>
-            <p>Please check your connection and try again.</p>
+            <p>Error details: ${error.message}</p>
           </div>
         `;
       }
