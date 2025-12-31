@@ -6,6 +6,7 @@ import { JWT_SECRET } from "../middleware/auth.js";
 
 const router = express.Router();
 
+// Registration
 router.post("/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -45,6 +46,7 @@ router.post("/register", async (req, res) => {
 
     const userId = result.rows[0].id;
 
+    // Sign token with Vercel secret
     const token = jwt.sign(
       { id: userId, username, email },
       JWT_SECRET,
@@ -71,6 +73,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
+// Login
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -95,6 +98,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid email/username or password" });
     }
 
+    // Sign token with Vercel secret
     const token = jwt.sign(
       { id: user.id, username: user.username, email: user.email },
       JWT_SECRET,
@@ -112,6 +116,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// Get current user info
 router.get("/me", async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
@@ -138,6 +143,7 @@ router.get("/me", async (req, res) => {
   }
 });
 
+// Change password
 router.post("/change-password", async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
