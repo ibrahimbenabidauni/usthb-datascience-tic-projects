@@ -1,84 +1,9 @@
 import express from "express";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import pool from "../db/postgres.js";
+import { generateToken, authenticateToken } from "../middleware/auth.js";
 
 const router = express.Router();
-
-/**
- * ---------------------------------------------------------
- * JWT CONFIGURATION & UTILITIES
- * ---------------------------------------------------------
- */
-
-// Safely export JWT_SECRET with fallback for local dev/missing env
-export const JWT_SECRET = process.env.JWT_SECRET || 'tic-projects-platform-secret-key-2025';
-const OLD_SECRET = 'tic-projects-platform-secret-key-2025';
-
-/**
- * Robust Token Generation
- * - payload: Object containing user data (id, username, etc.)
- * - expiresIn: Default to 7 days for better user experience
- */
-export const generateToken = (payload, expiresIn = '7d') => {
-  try {
-    console.log(`[JWT] Generating token for user: ${payload.username || payload.id}`);
-    return jwt.sign(payload, JWT_SECRET, { expiresIn });
-  } catch (error) {
-    console.error(`[JWT] Error generating token:`, error);
-    throw new Error("Token generation failed");
-  }
-};
-
-/**
- * Robust Authentication Middleware
- * - Works both as local middleware and compatible with serverless
- * - Handles secret rotation (Old/New)
- * - Logs detailed debugging info without crashing
- */
-export const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    console.log("[AUTH] No token received in request headers");
-    return res.status(401).json({ error: "No token provided", code: "MISSING_TOKEN" });
-  }
-
-  let decoded = null;
-  let errorReason = null;
-
-  // Attempt verification with all available secrets (New Secret first, then Fallback)
-  const secrets = [JWT_SECRET, OLD_SECRET];
-  
-  for (let i = 0; i < secrets.length; i++) {
-    const currentSecret = secrets[i];
-    const secretType = i === 0 ? "NEW_ENV_SECRET" : "OLD_FALLBACK_SECRET";
-
-    try {
-      decoded = jwt.verify(token, currentSecret);
-      console.log(`[AUTH] Token successfully verified using ${secretType}. Decoded user:`, decoded.username || decoded.id);
-      break; // Stop loop once verified
-    } catch (err) {
-      errorReason = err;
-      console.log(`[AUTH] Verification attempt failed with ${secretType}: ${err.message}`);
-    }
-  }
-
-  if (decoded) {
-    req.user = decoded;
-    return next();
-  }
-
-  // Handle specific JWT error cases for better frontend feedback
-  if (errorReason && errorReason.name === 'TokenExpiredError') {
-    console.warn(`[AUTH] Token expired at: ${errorReason.expiredAt}`);
-    return res.status(401).json({ error: "Token expired", code: "TOKEN_EXPIRED" });
-  }
-
-  console.error("[AUTH] All verification attempts failed. Final error:", errorReason?.message || "Invalid token");
-  return res.status(403).json({ error: "Invalid or expired token", code: "INVALID_TOKEN" });
-};
 
 /**
  * ---------------------------------------------------------
@@ -185,7 +110,7 @@ router.get("/me", authenticateToken, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: "User found in token but not in database" });
     }
 
     res.json({ user: result.rows[0] });
