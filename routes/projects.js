@@ -36,7 +36,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 } // Increased to 50MB for videos
+  limits: { fileSize: 100 * 1024 * 1024 } // Increased to 100MB
 });
 
 // Middleware to handle multer errors gracefully on serverless platforms

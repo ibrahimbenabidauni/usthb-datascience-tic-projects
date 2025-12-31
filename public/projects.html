@@ -117,7 +117,7 @@
           </div>
 
           <div class="form-group">
-            <label for="files">Upload Files (Max 5 files, 50MB total)</label>
+            <label for="files">Upload Files (Max 5 files, 100MB total)</label>
             <input type="file" id="files" name="files" accept=".pdf,.doc,.docx,.zip,.rar,.txt,.mp4,.mov,.avi" multiple>
             <div id="storageLimitInfo" style="font-size: 0.8rem; color: var(--gray-500); margin-top: 5px;">
               <p>Storage Limit: 0.5 GB per project (Neon Free Tier Limit)</p>
@@ -304,12 +304,18 @@
               <p>${escapeHtml(project.description)}</p>
 
               ${project.files && Array.isArray(project.files) ? `
-                <div class="project-files" style="margin-bottom: 16px;">
-                  ${project.files.map(file => file && file.file_path ? `
-                    <a href="${file.file_path}" target="_blank" style="display:flex;align-items:center;gap:8px;color:var(--primary);font-weight:600;margin-bottom:4px;font-size:0.9rem;">
-                      ${file.file_type && file.file_type.includes('video') ? '🎥' : '📎'} View / Download ${file.file_type && file.file_type.includes('video') ? 'Video' : 'File'}
-                    </a>
-                  ` : '').join('')}
+                <div class="project-files" style="margin-bottom: 16px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px;">
+                  <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #666;">Project Files:</h4>
+                  <div style="display: flex; flex-direction: column; gap: 8px;">
+                    ${project.files.map((file, fIdx) => file && file.file_path ? `
+                      <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #eee;">
+                        <span style="font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">
+                          ${file.file_type && file.file_type.includes('video') ? '🎥' : '📎'} File ${fIdx + 1}
+                        </span>
+                        <a href="${file.file_path}" target="_blank" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">View</a>
+                      </div>
+                    ` : '').join('')}
+                  </div>
                 </div>
               ` : (project.file_path ? `
                 <a href="${project.file_path}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;color:var(--primary);font-weight:600;margin-bottom:16px;">
@@ -737,12 +743,18 @@
               <p>${escapeHtml(project.description)}</p>
 
               ${project.files && Array.isArray(project.files) ? `
-                <div class="project-files" style="margin-bottom: 16px;">
-                  ${project.files.map(file => file && file.file_path ? `
-                    <a href="${file.file_path}" target="_blank" style="display:flex;align-items:center;gap:8px;color:var(--primary);font-weight:600;margin-bottom:4px;font-size:0.9rem;">
-                      ${file.file_type && file.file_type.includes('video') ? '🎥' : '📎'} View / Download ${file.file_type && file.file_type.includes('video') ? 'Video' : 'File'}
-                    </a>
-                  ` : '').join('')}
+                <div class="project-files" style="margin-bottom: 16px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px;">
+                  <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #666;">Project Files:</h4>
+                  <div style="display: flex; flex-direction: column; gap: 8px;">
+                    ${project.files.map((file, fIdx) => file && file.file_path ? `
+                      <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #eee;">
+                        <span style="font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">
+                          ${file.file_type && file.file_type.includes('video') ? '🎥' : '📎'} File ${fIdx + 1}
+                        </span>
+                        <a href="${file.file_path}" target="_blank" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">View</a>
+                      </div>
+                    ` : '').join('')}
+                  </div>
                 </div>
               ` : (project.file_path ? `
                 <a href="${project.file_path}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;color:var(--primary);font-weight:600;margin-bottom:16px;">
