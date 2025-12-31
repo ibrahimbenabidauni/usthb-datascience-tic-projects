@@ -32,11 +32,13 @@ const upload = multer({
 
 // Middleware to handle multer errors
 const handleFileUpload = (req, res, next) => {
+  console.log('[FLOW] 2. Multer Middleware Start');
   upload.array("files", 5)(req, res, (err) => {
     if (err) {
-      console.error("[UPLOAD] Error:", err.message);
+      console.error("[FLOW] Multer Error:", err.message);
       return res.status(400).json({ error: "File upload failed: " + err.message });
     }
+    console.log('[FLOW] 2. Multer Middleware Finish. Files:', req.files ? req.files.length : 0);
     next();
   });
 };
@@ -137,8 +139,10 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
+  console.log('[FLOW] 3. Project Route Handler Start');
   try {
     const { title, description, section, group_number, full_name, matricule } = req.body;
+    console.log('[FLOW] Request Body Keys:', Object.keys(req.body || {}));
 
     // Server-side logging to catch double requests
     console.log(`[POST /projects] Received submission for author_id: ${req.user.id}, title: ${title}`);
