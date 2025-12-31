@@ -612,6 +612,14 @@
 
     document.getElementById('projectForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      // Get token fresh from localStorage to avoid using an expired one
+      const currentToken = localStorage.getItem('token');
+      if (!currentToken) {
+        window.location.href = '/login.html';
+        return;
+      }
+
       const form = document.getElementById('projectForm');
       const submitBtn = document.getElementById('submitBtn');
       const formData = new FormData(form);
@@ -707,7 +715,7 @@
       });
 
       xhr.open('POST', '/projects');
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.setRequestHeader('Authorization', `Bearer ${currentToken}`);
       xhr.send(formData);
     });
 

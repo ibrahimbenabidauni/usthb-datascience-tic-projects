@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'tic-projects-platform-secret-key-2025';
+
+console.log('Using JWT_SECRET length:', JWT_SECRET.length);
 
 export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
