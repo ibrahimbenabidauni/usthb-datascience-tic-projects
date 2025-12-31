@@ -57,34 +57,42 @@ router.get("/", async (req, res) => {
     
     let query = `
       SELECT
-        projects.id,
-        projects.title,
-        projects.description,
-        projects.section,
-        projects.group_number,
-        projects.full_name,
-        projects.matricule,
-        projects.created_at,
-        users.username AS author_name,
-        users.id AS author_id,
-        COALESCE(AVG(reviews.rating), 0)::FLOAT as avg_rating,
-        COUNT(DISTINCT reviews.id) as review_count,
-        JSON_AGG(DISTINCT JSONB_BUILD_OBJECT('file_path', project_files.file_path, 'file_type', project_files.file_type)) FILTER (WHERE project_files.file_path IS NOT NULL) as files
-      FROM projects
-      JOIN users ON users.id = projects.author_id
-      LEFT JOIN project_files ON project_files.project_id = projects.id
-      LEFT JOIN reviews ON reviews.project_id = projects.id
+        p.id,
+        p.title,
+        p.description,
+        p.section,
+        p.group_number,
+        p.full_name,
+        p.matricule,
+        p.created_at,
+        u.username AS author_name,
+        u.id AS author_id,
+        COALESCE(avg_r.rating, 0)::FLOAT as avg_rating,
+        COALESCE(avg_r.review_count, 0) as review_count,
+        f.files
+      FROM projects p
+      JOIN users u ON u.id = p.author_id
+      LEFT JOIN (
+        SELECT project_id, JSON_AGG(JSONB_BUILD_OBJECT('file_path', file_path, 'file_type', file_type)) as files
+        FROM project_files
+        GROUP BY project_id
+      ) f ON f.project_id = p.id
+      LEFT JOIN (
+        SELECT project_id, AVG(rating) as rating, COUNT(id) as review_count
+        FROM reviews
+        GROUP BY project_id
+      ) avg_r ON avg_r.project_id = p.id
     `;
     
     const params = [];
     const conditions = [];
     
     if (section) {
-      conditions.push(`projects.section = $${params.length + 1}`);
+      conditions.push(`p.section = $${params.length + 1}`);
       params.push(section);
     }
     if (group) {
-      conditions.push(`projects.group_number = $${params.length + 1}`);
+      conditions.push(`p.group_number = $${params.length + 1}`);
       params.push(group);
     }
     
@@ -92,7 +100,7 @@ router.get("/", async (req, res) => {
       query += " WHERE " + conditions.join(" AND ");
     }
     
-    query += " GROUP BY projects.id, users.username, users.id ORDER BY projects.created_at DESC";
+    query += " ORDER BY p.created_at DESC";
     
     const result = await pool.query(query, params);
     res.json({ projects: result.rows });
