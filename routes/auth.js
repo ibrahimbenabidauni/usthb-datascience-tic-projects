@@ -2,7 +2,7 @@ import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import pool from "../db/postgres.js";
-import { JWT_SECRET } from "../middleware/auth.js";
+import { JWT_SECRET, authenticateToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -117,19 +117,11 @@ router.post("/login", async (req, res) => {
 });
 
 // Get current user info
-router.get("/me", async (req, res) => {
+router.get("/me", authenticateToken, async (req, res) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({ error: "No token provided" });
-    }
-
-    const decoded = jwt.verify(token, JWT_SECRET);
     const result = await pool.query(
       "SELECT id, username, email, created_at FROM users WHERE id = $1",
-      [decoded.id]
+      [req.user.id]
     );
 
     if (result.rows.length === 0) {
@@ -139,21 +131,13 @@ router.get("/me", async (req, res) => {
     res.json({ user: result.rows[0] });
   } catch (error) {
     console.error("Auth error:", error);
-    return res.status(403).json({ error: "Invalid token" });
+    res.status(500).json({ error: "Server error during profile fetch" });
   }
 });
 
 // Change password
-router.post("/change-password", async (req, res) => {
+router.post("/change-password", authenticateToken, async (req, res) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({ error: "No token provided" });
-    }
-
-    const decoded = jwt.verify(token, JWT_SECRET);
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
@@ -166,7 +150,7 @@ router.post("/change-password", async (req, res) => {
 
     const userResult = await pool.query(
       "SELECT * FROM users WHERE id = $1",
-      [decoded.id]
+      [req.user.id]
     );
 
     if (userResult.rows.length === 0) {
