@@ -2,9 +2,9 @@ import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import pool from "../db/postgres.js";
+import { JWT_SECRET } from "../middleware/auth.js";
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
 
 router.post("/register", async (req, res) => {
   try {
