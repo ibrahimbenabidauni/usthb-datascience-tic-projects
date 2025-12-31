@@ -67,7 +67,7 @@ router.get("/", async (req, res) => {
       FROM projects p
       JOIN users u ON u.id = p.author_id
       LEFT JOIN (
-        SELECT project_id, JSONB_AGG(JSONB_BUILD_OBJECT('file_path', file_path, 'original_name', COALESCE(original_name, 'file'))) as files
+        SELECT project_id, JSONB_AGG(JSONB_BUILD_OBJECT('file_path', file_path)) as files
         FROM project_files
         GROUP BY project_id
       ) f ON f.project_id = p.id
@@ -126,7 +126,7 @@ router.get("/:id", async (req, res) => {
       JOIN users ON users.id = projects.author_id
       LEFT JOIN reviews ON reviews.project_id = projects.id
       LEFT JOIN (
-        SELECT project_id, JSONB_AGG(JSONB_BUILD_OBJECT('file_path', file_path, 'original_name', COALESCE(original_name, 'file'))) as files
+        SELECT project_id, JSONB_AGG(JSONB_BUILD_OBJECT('file_path', file_path)) as files
         FROM project_files
         GROUP BY project_id
       ) f ON f.project_id = projects.id
@@ -232,7 +232,7 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
         p.*,
         u.username AS author_name,
         COALESCE(
-          (SELECT JSONB_AGG(JSONB_BUILD_OBJECT('file_path', file_path, 'original_name', COALESCE(original_name, 'file')))
+          (SELECT JSONB_AGG(JSONB_BUILD_OBJECT('file_path', file_path))
            FROM project_files
            WHERE project_id = p.id),
           '[]'::jsonb
