@@ -280,6 +280,9 @@
       try {
         const response = await fetch(url);
         const data = await response.json();
+        
+        // Store projects globally for editing
+        window.currentProjects = data.projects || [];
 
         if (data.projects && data.projects.length > 0) {
           container.innerHTML = data.projects.map((project, index) => `
@@ -878,6 +881,68 @@
       });
 
       if (token) {
+        const loggedInItems = [
+          { text: 'Profile', href: 'profile.html' },
+          { text: 'My Projects', href: 'projects.html' },
+          { text: 'Change Password', href: 'change-password.html' }
+        ];
+
+        const divider = document.createElement('div');
+        divider.className = 'sidebar-divider';
+        menu.appendChild(divider);
+
+        loggedInItems.forEach(item => {
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = item.href;
+          a.textContent = item.text;
+          li.appendChild(a);
+          menu.appendChild(li);
+        });
+
+        authDiv.innerHTML = `<button class="btn btn-secondary" onclick="logout()">Logout</button>`;
+      } else {
+        authDiv.innerHTML = `
+          <a href="login.html" class="btn btn-primary" style="display: block; text-align: center; padding: 12px;">Login</a>
+          <a href="register.html" class="btn btn-secondary" style="display: block; text-align: center; padding: 12px; margin-top: 10px; border: 2px solid rgba(255,255,255,0.3);">Register</a>
+        `;
+      }
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      if (sidebar && overlay) {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('open');
+      }
+    }
+
+    function updateSidebar() {
+      const menu = document.getElementById('sidebarMenu');
+      const authDiv = document.getElementById('sidebarAuth');
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      if (!menu || !authDiv) return;
+      menu.innerHTML = '';
+      authDiv.innerHTML = '';
+
+      const baseItems = [
+        { text: 'Home', href: '/' },
+        { text: 'Browse Projects', href: 'projects.html' },
+        { text: 'Ratings', href: 'ratings.html' }
+      ];
+
+      baseItems.forEach(item => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = item.href;
+        a.textContent = item.text;
+        li.appendChild(a);
+        menu.appendChild(li);
+      });
+
+      if (token && user) {
         const loggedInItems = [
           { text: 'Profile', href: 'profile.html' },
           { text: 'My Projects', href: 'projects.html' },
