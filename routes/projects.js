@@ -119,15 +119,19 @@ router.get("/:id", async (req, res) => {
         projects.created_at,
         users.username AS author_name,
         users.id AS author_id,
-        project_files.file_path,
         COALESCE(AVG(reviews.rating), 0)::FLOAT as avg_rating,
-        COUNT(reviews.id) as review_count
+        COUNT(reviews.id) as review_count,
+        f.files
       FROM projects
       JOIN users ON users.id = projects.author_id
-      LEFT JOIN project_files ON project_files.project_id = projects.id
       LEFT JOIN reviews ON reviews.project_id = projects.id
+      LEFT JOIN (
+        SELECT project_id, JSONB_AGG(JSONB_BUILD_OBJECT('file_path', file_path, 'file_type', file_type, 'original_name', original_name)) as files
+        FROM project_files
+        GROUP BY project_id
+      ) f ON f.project_id = projects.id
       WHERE projects.id = $1
-      GROUP BY projects.id, users.username, users.id, project_files.file_path
+      GROUP BY projects.id, users.username, users.id, f.files
     `, [req.params.id]);
 
     if (result.rows.length === 0) {
