@@ -578,38 +578,125 @@
 
     document.getElementById('newProjectBtn').addEventListener('click', openModal);
 
+    function handleFileSelect() {
+      const fileInput = document.getElementById('files');
+      const fileList = document.getElementById('fileList');
+      fileList.innerHTML = '';
+      
+      if (fileInput.files.length > 5) {
+        alert('You can only upload up to 5 files.');
+        fileInput.value = '';
+        return;
+      }
+
+      Array.from(fileInput.files).forEach(file => {
+        const size = (file.size / (1024 * 1024)).toFixed(2);
+        const item = document.createElement('div');
+        item.style.fontSize = '0.8rem';
+        item.style.padding = '4px 8px';
+        item.style.background = '#f8f9fa';
+        item.style.borderRadius = '4px';
+        item.style.border = '1px solid #e9ecef';
+        item.textContent = `${file.name} (${size} MB)`;
+        fileList.appendChild(item);
+      });
+    }
+
     document.getElementById('projectForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const form = document.getElementById('projectForm');
+      const submitBtn = document.getElementById('submitBtn');
       const formData = new FormData(form);
       const messageDiv = document.getElementById('modalMessage');
+      const progressContainer = document.getElementById('uploadProgressContainer');
+      const progressBar = document.getElementById('uploadProgressBar');
+      const percentageText = document.getElementById('uploadPercentage');
+      const statusText = document.getElementById('uploadStatus');
 
-      try {
-        const response = await fetch('/projects', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          messageDiv.className = 'message success';
-          messageDiv.textContent = 'Project submitted successfully!';
-          setTimeout(() => {
-            closeModal();
-            loadProjects();
-          }, 1000);
-        } else {
-          messageDiv.className = 'message error';
-          messageDiv.textContent = data.error || 'Failed to submit project';
-        }
-      } catch (error) {
+      // Validation
+      const files = document.getElementById('files').files;
+      if (files.length === 0) {
         messageDiv.className = 'message error';
-        messageDiv.textContent = 'Connection error. Please try again.';
+        messageDiv.textContent = 'Please select at least one file to upload.';
+        return;
       }
+
+      let totalSize = 0;
+      for (let i = 0; i < files.length; i++) {
+        totalSize += files[i].size;
+      }
+
+      if (totalSize > 100 * 1024 * 1024) {
+        messageDiv.className = 'message error';
+        messageDiv.textContent = 'Total file size exceeds 100MB limit.';
+        return;
+      }
+
+      // Prepare UI for upload
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Uploading...';
+      messageDiv.textContent = '';
+      progressContainer.style.display = 'block';
+      progressBar.style.width = '0%';
+      percentageText.textContent = '0%';
+      statusText.textContent = 'Uploading project...';
+
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          progressBar.style.width = percent + '%';
+          percentageText.textContent = percent + '%';
+          if (percent === 100) {
+            statusText.textContent = 'Processing...';
+          }
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            messageDiv.className = 'message success';
+            messageDiv.textContent = 'Project submitted successfully!';
+            statusText.textContent = 'Success!';
+            progressBar.style.background = '#10b981';
+            
+            setTimeout(() => {
+              closeModal();
+              loadProjects();
+              // Reset UI
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Submit Project';
+              progressContainer.style.display = 'none';
+              document.getElementById('fileList').innerHTML = '';
+            }, 1500);
+          } else {
+            throw new Error(data.error || 'Failed to submit project');
+          }
+        } catch (error) {
+          messageDiv.className = 'message error';
+          messageDiv.textContent = error.message;
+          statusText.textContent = 'Upload failed';
+          progressBar.style.background = '#ef4444';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit Project';
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        messageDiv.className = 'message error';
+        messageDiv.textContent = 'Network error occurred during upload.';
+        statusText.textContent = 'Network error';
+        progressBar.style.background = '#ef4444';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Project';
+      });
+
+      xhr.open('POST', '/projects');
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
     });
 
     document.getElementById('projectModal').addEventListener('click', (e) => {
