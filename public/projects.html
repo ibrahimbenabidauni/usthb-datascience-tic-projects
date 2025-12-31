@@ -661,32 +661,22 @@
       // Log submission to catch double fires in console
       console.log('Project submission started. Button disabled:', submitBtn.disabled);
 
-      // Production Verification: Log token state before XHR
-      console.log('[CLIENT VERIFY] Sending token with length:', currentToken ? currentToken.length : 0);
-      console.log('[CLIENT VERIFY] Token prefix:', currentToken ? currentToken.substring(0, 10) : 'NONE');
-
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/projects');
-      
-      // MANDATORY: Explicitly set the Bearer token for production
       xhr.setRequestHeader('Authorization', `Bearer ${currentToken}`);
       
-      // LOG HEADERS TO CONSOLE FOR VERIFICATION
-      console.log('[CLIENT VERIFY] Authorization header set');
-
       xhr.upload.addEventListener('progress', (event) => {
         if (event.lengthComputable) {
           const percent = Math.round((event.loaded / event.total) * 100);
           progressBar.style.width = percent + '%';
           percentageText.textContent = percent + '%';
           if (percent === 100) {
-            statusText.textContent = 'Server processing...';
+            statusText.textContent = 'Processing...';
           }
         }
       });
 
       xhr.addEventListener('load', () => {
-        console.log('[CLIENT VERIFY] Response received:', xhr.status);
         try {
           const data = JSON.parse(xhr.responseText);
           if (xhr.status >= 200 && xhr.status < 300) {
@@ -698,15 +688,12 @@
             setTimeout(() => {
               closeModal();
               loadProjects();
-              // Reset UI
               submitBtn.disabled = false;
-              submitBtn.classList.remove('btn-loading');
               submitBtn.textContent = 'Submit Project';
               progressContainer.style.display = 'none';
               document.getElementById('fileList').innerHTML = '';
             }, 1500);
           } else {
-            console.error('[CLIENT VERIFY] Error response:', data);
             throw new Error(data.error || 'Failed to submit project');
           }
         } catch (error) {

@@ -37,8 +37,6 @@ const handleFileUpload = (req, res, next) => {
       console.error("[UPLOAD] Error:", err.message);
       return res.status(400).json({ error: "File upload failed: " + err.message });
     }
-    // TRACING: Log header presence after multer processing
-    console.log(`[VERIFY POST-MULTER] Auth Header: ${req.headers['authorization'] ? 'PRESENT' : 'MISSING'}`);
     next();
   });
 };
