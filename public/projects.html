@@ -383,13 +383,19 @@
     }
 
     function openModal() {
-      document.getElementById('projectModal').classList.add('active');
+      const modal = document.getElementById('projectModal');
+      if (modal) modal.classList.add('active');
     }
 
     function closeModal() {
-      document.getElementById('projectModal').classList.remove('active');
-      document.getElementById('projectForm').reset();
-      document.getElementById('modalMessage').className = 'message';
+      const modal = document.getElementById('projectModal');
+      if (modal) {
+        modal.classList.remove('active');
+        const form = document.getElementById('projectForm');
+        if (form) form.reset();
+        const msg = document.getElementById('modalMessage');
+        if (msg) msg.className = 'message';
+      }
     }
 
     function openReviewModal(projectId, projectTitle) {
@@ -936,7 +942,10 @@
       const authDiv = document.getElementById('sidebarAuth');
       const token = localStorage.getItem('token');
       const user = JSON.parse(localStorage.getItem('user') || 'null');
+      
+      // Safety check for elements
       if (!menu || !authDiv) return;
+      
       menu.innerHTML = '';
       authDiv.innerHTML = '';
 
@@ -984,9 +993,12 @@
       }
     }
 
-    updateSidebar();
-    updateAuthNav();
-    loadProjects();
+    // Ensure DOM is loaded before running updates
+    document.addEventListener('DOMContentLoaded', () => {
+      updateSidebar();
+      updateAuthNav();
+      loadProjects();
+    });
   </script>
 </body>
 </html>
