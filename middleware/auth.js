@@ -1,7 +1,11 @@
 import jwt from 'jsonwebtoken';
 
-const NEW_SECRET = process.env.JWT_SECRET;
+const NEW_SECRET = process.env.JWT_SECRET || null;
 const OLD_SECRET = 'tic-projects-platform-secret-key-2025'; // fallback
+
+if (!NEW_SECRET) {
+  console.warn('[WARNING] NEW_SECRET is undefined. Make sure JWT_SECRET is set in Vercel Environment Variables.');
+}
 
 export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -19,6 +23,7 @@ export const authenticateToken = (req, res, next) => {
   let lastError = null;
 
   for (const secret of [NEW_SECRET, OLD_SECRET]) {
+    if (!secret) continue; // skip undefined secrets
     try {
       decoded = jwt.verify(token, secret);
       console.log(`[FLOW] Token verified with secret: ${secret === NEW_SECRET ? 'NEW_SECRET' : 'OLD_SECRET'}`);
