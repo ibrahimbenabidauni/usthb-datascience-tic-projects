@@ -993,11 +993,96 @@
       }
     }
 
-    // Ensure DOM is loaded before running updates
     document.addEventListener('DOMContentLoaded', () => {
       updateSidebar();
       updateAuthNav();
       loadProjects();
+      
+      const projectForm = document.getElementById('projectForm');
+      if (projectForm) {
+        projectForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const formData = new FormData(projectForm);
+          const messageDiv = document.getElementById('modalMessage');
+
+          try {
+            const response = await fetch('/projects', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              },
+              body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              if (messageDiv) {
+                messageDiv.className = 'message success';
+                messageDiv.textContent = 'Project submitted successfully!';
+              }
+              setTimeout(() => {
+                closeModal();
+                loadProjects();
+              }, 1000);
+            } else {
+              if (messageDiv) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = data.error || 'Failed to submit project';
+              }
+            }
+          } catch (error) {
+            if (messageDiv) {
+              messageDiv.className = 'message error';
+              messageDiv.textContent = 'Failed to submit project';
+            }
+          }
+        });
+      }
+
+      const editForm = document.getElementById('editForm');
+      if (editForm) {
+        editForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const formData = new FormData(editForm);
+          const messageDiv = document.getElementById('editMessage');
+          const payload = Object.fromEntries(formData.entries());
+
+          try {
+            const response = await fetch(`/projects/${currentProjectId}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              if (messageDiv) {
+                messageDiv.className = 'message success';
+                messageDiv.textContent = 'Project updated successfully!';
+              }
+              setTimeout(() => {
+                closeEditModal();
+                loadProjects();
+              }, 1000);
+            } else {
+              if (messageDiv) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = data.error || 'Failed to update project';
+              }
+            }
+          } catch (error) {
+            if (messageDiv) {
+              messageDiv.className = 'message error';
+              messageDiv.textContent = 'Failed to update project';
+            }
+          }
+        });
+      }
     });
   </script>
 </body>
