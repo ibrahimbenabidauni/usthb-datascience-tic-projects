@@ -235,10 +235,17 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
       WHERE p.id = $1
     `, [projectId]);
 
-    res.status(201).json({ message: "Project created successfully", project: projectResult.rows[0] });
+    const savedProject = projectResult.rows[0];
+    console.log('[TRACE] 4. Project Saved Successfully. ID:', savedProject.id, 'Files:', savedProject.files.length);
+    
+    // Explicitly return 201 Created
+    return res.status(201).json({ 
+      message: "Project created successfully", 
+      project: savedProject 
+    });
   } catch (err) {
-    console.error("[POST /projects] Error:", err);
-    res.status(500).json({ error: "Failed to create project" });
+    console.error("[POST /projects] FATAL ERROR:", err);
+    return res.status(500).json({ error: "Internal Server Error: Failed to save project data" });
   }
 });
 

@@ -680,18 +680,27 @@
         try {
           const data = JSON.parse(xhr.responseText);
           if (xhr.status >= 200 && xhr.status < 300) {
+            console.log('[CLIENT VERIFY] Submission success:', data);
             messageDiv.className = 'message success';
             messageDiv.textContent = 'Project submitted successfully!';
             statusText.textContent = 'Success!';
             progressBar.style.background = '#10b981';
             
+            // Clear form immediately
+            form.reset();
+            if (document.getElementById('fileList')) document.getElementById('fileList').innerHTML = '';
+            
+            // Trigger an immediate reload of the projects list
+            loadProjects().then(() => {
+              console.log('[CLIENT VERIFY] Projects list reloaded');
+            });
+            
             setTimeout(() => {
               closeModal();
-              loadProjects();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
               submitBtn.disabled = false;
               submitBtn.textContent = 'Submit Project';
               progressContainer.style.display = 'none';
-              document.getElementById('fileList').innerHTML = '';
             }, 1500);
           } else {
             throw new Error(data.error || 'Failed to submit project');
