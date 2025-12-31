@@ -67,7 +67,7 @@ router.get("/", async (req, res) => {
       FROM projects p
       JOIN users u ON u.id = p.author_id
       LEFT JOIN (
-        SELECT project_id, JSONB_AGG(JSONB_BUILD_OBJECT('file_path', file_path, 'file_type', file_type, 'original_name', original_name)) as files
+        SELECT project_id, JSONB_AGG(JSONB_BUILD_OBJECT('file_path', file_path)) as files
         FROM project_files
         GROUP BY project_id
       ) f ON f.project_id = p.id
