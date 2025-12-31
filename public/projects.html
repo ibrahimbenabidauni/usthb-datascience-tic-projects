@@ -333,7 +333,7 @@
                     ${project.files.map((file) => file && file.file_path ? `
                       <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #eee;">
                         <span style="font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">
-                          📎 ${file.file_path.split('/').pop().replace(/^project-\d+-\d+-/, '')}
+                          📎 ${escapeHtml(file.original_name)}
                         </span>
                         <a href="${file.file_path}" target="_blank" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">View</a>
                       </div>

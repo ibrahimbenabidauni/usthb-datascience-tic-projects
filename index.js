@@ -32,14 +32,37 @@ app.use("/auth", authRoutes);
 app.use("/projects", projectRoutes);
 app.use("/users", userRoutes);
 
-app.get("/uploads/:filename", (req, res) => {
-  const filePath = path.join(__dirname, "public", "uploads", req.params.filename);
-  res.sendFile(filePath, (err) => {
-    if (err) {
-      console.error(`[ERROR] File not found: ${filePath}`);
-      res.status(404).json({ error: "File not found" });
+import pool from "./db/postgres.js";
+
+app.get("/uploads/:filename", async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = `/uploads/${filename}`;
+    
+    const result = await pool.query(
+      "SELECT file_data, file_type, original_name FROM project_files WHERE file_path = $1",
+      [filePath]
+    );
+
+    if (result.rows.length > 0 && result.rows[0].file_data) {
+      const file = result.rows[0];
+      res.set("Content-Type", file.file_type || "application/octet-stream");
+      res.set("Content-Disposition", `inline; filename="${file.original_name || filename}"`);
+      return res.send(file.file_data);
     }
-  });
+
+    // Fallback to local disk if data not in DB (for non-Vercel local dev)
+    const localPath = path.join(__dirname, "public", "uploads", filename);
+    res.sendFile(localPath, (err) => {
+      if (err) {
+        console.error(`[ERROR] File not found in DB or Disk: ${localPath}`);
+        res.status(404).json({ error: "File not found" });
+      }
+    });
+  } catch (err) {
+    console.error("[ERROR] File serving crash:", err);
+    res.status(500).json({ error: "Internal server error serving file" });
+  }
 });
 
 app.get("/{*splat}", (req, res) => {

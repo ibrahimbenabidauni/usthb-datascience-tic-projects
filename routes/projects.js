@@ -67,7 +67,7 @@ router.get("/", async (req, res) => {
       FROM projects p
       JOIN users u ON u.id = p.author_id
       LEFT JOIN (
-        SELECT project_id, JSONB_AGG(JSONB_BUILD_OBJECT('file_path', file_path)) as files
+        SELECT project_id, JSONB_AGG(JSONB_BUILD_OBJECT('file_path', file_path, 'original_name', COALESCE(original_name, 'file'))) as files
         FROM project_files
         GROUP BY project_id
       ) f ON f.project_id = p.id
@@ -202,15 +202,20 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
         const fullPath = path.join(uploadDir, fileName);
 
         try {
-          // SAFE INSERT: Only using columns that definitely exist
+          // SAVE TO DATABASE: Since Vercel has no persistent disk, we store the file data directly in Postgres
+          await pool.query(
+            `INSERT INTO project_files (project_id, file_path, file_data, original_name, file_type, file_size) VALUES ($1, $2, $3, $4, $5, $6)`,
+            [projectId, filePath, file.buffer, file.originalname, file.mimetype, file.size]
+          );
+
+          console.log(`[POST /projects] Saved file to DB: ${file.originalname}`);
+        } catch (fsErr) {
+          console.error("[POST /projects] DB File save error:", fsErr);
+          // Last resort fallback
           await pool.query(
             `INSERT INTO project_files (project_id, file_path) VALUES ($1, $2)`,
             [projectId, filePath]
           );
-
-          console.log(`[POST /projects] Saved file: ${file.originalname} for project_id: ${projectId}`);
-        } catch (fsErr) {
-          console.error("[POST /projects] File save error:", fsErr);
         }
       }
     }
@@ -220,7 +225,7 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
         p.*,
         u.username AS author_name,
         COALESCE(
-          (SELECT JSONB_AGG(JSONB_BUILD_OBJECT('file_path', file_path))
+          (SELECT JSONB_AGG(JSONB_BUILD_OBJECT('file_path', file_path, 'original_name', COALESCE(original_name, 'file')))
            FROM project_files
            WHERE project_id = p.id),
           '[]'::jsonb
