@@ -663,6 +663,7 @@
 
       // Production Verification: Log token state before XHR
       console.log('[CLIENT VERIFY] Sending token with length:', currentToken ? currentToken.length : 0);
+      console.log('[CLIENT VERIFY] Token prefix:', currentToken ? currentToken.substring(0, 10) : 'NONE');
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/projects');
@@ -670,6 +671,9 @@
       // MANDATORY: Explicitly set the Bearer token for production
       xhr.setRequestHeader('Authorization', `Bearer ${currentToken}`);
       
+      // LOG HEADERS TO CONSOLE FOR VERIFICATION
+      console.log('[CLIENT VERIFY] Authorization header set');
+
       xhr.upload.addEventListener('progress', (event) => {
         if (event.lengthComputable) {
           const percent = Math.round((event.loaded / event.total) * 100);
@@ -681,7 +685,42 @@
         }
       });
 
+      xhr.addEventListener('load', () => {
+        console.log('[CLIENT VERIFY] Response received:', xhr.status);
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            messageDiv.className = 'message success';
+            messageDiv.textContent = 'Project submitted successfully!';
+            statusText.textContent = 'Success!';
+            progressBar.style.background = '#10b981';
+            
+            setTimeout(() => {
+              closeModal();
+              loadProjects();
+              // Reset UI
+              submitBtn.disabled = false;
+              submitBtn.classList.remove('btn-loading');
+              submitBtn.textContent = 'Submit Project';
+              progressContainer.style.display = 'none';
+              document.getElementById('fileList').innerHTML = '';
+            }, 1500);
+          } else {
+            console.error('[CLIENT VERIFY] Error response:', data);
+            throw new Error(data.error || 'Failed to submit project');
+          }
+        } catch (error) {
+          messageDiv.className = 'message error';
+          messageDiv.textContent = error.message;
+          statusText.textContent = 'Upload failed';
+          progressBar.style.background = '#ef4444';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit Project';
+        }
+      });
+
       xhr.addEventListener('error', () => {
+        console.error('[CLIENT VERIFY] Network error');
         messageDiv.className = 'message error';
         messageDiv.textContent = 'Network error occurred during upload.';
         statusText.textContent = 'Network error';
@@ -690,8 +729,6 @@
         submitBtn.textContent = 'Submit Project';
       });
 
-      xhr.open('POST', '/projects');
-      xhr.setRequestHeader('Authorization', `Bearer ${currentToken}`);
       xhr.send(formData);
     });
 

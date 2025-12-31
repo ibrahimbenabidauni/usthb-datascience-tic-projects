@@ -8,23 +8,32 @@ export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  // TRACING: Captured headers for production verification
-  if (process.env.NODE_ENV === 'production' || true) {
-    console.log(`[VERIFY] Auth Header: ${authHeader ? 'PRESENT' : 'MISSING'}`);
-    console.log(`[VERIFY] Token length: ${token ? token.length : 0}`);
-  }
+  // STEP 1: HARD INSTRUMENTATION (BACKEND)
+  console.log('--- BACKEND AUTH START ---');
+  console.log('Server Time:', new Date().toISOString());
+  console.log('Request Path:', req.path);
+  console.log('All Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Authorization Header Value:', authHeader);
+  console.log('Parsed Token:', token ? `${token.substring(0, 10)}... [length: ${token.length}]` : 'NULL');
 
   if (!token) {
+    console.error('[AUTH ERROR] No token provided');
     return res.status(401).json({ error: 'Access denied. No token provided.' });
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    console.log('[AUTH SUCCESS] User:', decoded.username, 'Exp:', new Date(decoded.exp * 1000).toISOString());
     req.user = decoded;
     next();
   } catch (error) {
-    console.error(`[VERIFY] JWT Error: ${error.message}`);
+    console.error('[AUTH ERROR] Verification failed:', error.message);
+    if (error.name === 'TokenExpiredError') {
+      console.error('[AUTH ERROR] Token expired at:', error.expiredAt);
+    }
     return res.status(403).json({ error: 'Invalid or expired token.' });
+  } finally {
+    console.log('--- BACKEND AUTH END ---');
   }
 };
 
