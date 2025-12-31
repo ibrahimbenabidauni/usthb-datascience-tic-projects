@@ -202,27 +202,15 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
         const fullPath = path.join(uploadDir, fileName);
 
         try {
-          // Only write to disk if not Vercel
-          if (!process.env.VERCEL) fs.writeFileSync(fullPath, file.buffer);
-
-          // SAFE INSERT: Check columns first or use simplified insert if schema is stubborn
+          // SAFE INSERT: Only using columns that definitely exist
           await pool.query(
-            `INSERT INTO project_files (project_id, file_path, file_type, file_size, original_name) VALUES ($1, $2, $3, $4, $5)`,
-            [projectId, filePath, file.mimetype, file.size, file.originalname]
+            `INSERT INTO project_files (project_id, file_path) VALUES ($1, $2)`,
+            [projectId, filePath]
           );
 
           console.log(`[POST /projects] Saved file: ${file.originalname} for project_id: ${projectId}`);
         } catch (fsErr) {
           console.error("[POST /projects] File save error:", fsErr);
-          // Fallback to minimal insert if extended columns fail
-          try {
-             await pool.query(
-              `INSERT INTO project_files (project_id, file_path) VALUES ($1, $2)`,
-              [projectId, filePath]
-            );
-          } catch (retryErr) {
-            console.error("[POST /projects] Fallback file save error:", retryErr);
-          }
         }
       }
     }

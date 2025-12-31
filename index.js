@@ -32,11 +32,17 @@ app.use("/auth", authRoutes);
 app.use("/projects", projectRoutes);
 app.use("/users", userRoutes);
 
+app.get("/uploads/:filename", (req, res) => {
+  const filePath = path.join(__dirname, "public", "uploads", req.params.filename);
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error(`[ERROR] File not found: ${filePath}`);
+      res.status(404).json({ error: "File not found" });
+    }
+  });
+});
+
 app.get("/{*splat}", (req, res) => {
-  const filePath = req.path;
-  if (filePath.startsWith("/uploads/")) {
-    return res.sendFile(path.join(__dirname, "public", filePath));
-  }
   if (!req.path.startsWith("/api") && !req.path.startsWith("/auth") && !req.path.startsWith("/projects") && !req.path.startsWith("/users")) {
     res.sendFile(path.join(__dirname, "public", "index.html"));
   }
