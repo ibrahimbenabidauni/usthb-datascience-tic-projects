@@ -33,6 +33,10 @@ app.use("/projects", projectRoutes);
 app.use("/users", userRoutes);
 
 app.get("/{*splat}", (req, res) => {
+  const filePath = req.path;
+  if (filePath.startsWith("/uploads/")) {
+    return res.sendFile(path.join(__dirname, "public", filePath));
+  }
   if (!req.path.startsWith("/api") && !req.path.startsWith("/auth") && !req.path.startsWith("/projects") && !req.path.startsWith("/users")) {
     res.sendFile(path.join(__dirname, "public", "index.html"));
   }
