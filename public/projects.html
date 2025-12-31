@@ -543,8 +543,8 @@
 
     document.addEventListener('click', (e) => {
       const dropdown = document.getElementById('searchResultsDropdown');
-      const searchBar = document.querySelector('.search-bar');
-      if (!searchBar.contains(e.target) && !dropdown.contains(e.target)) {
+      const searchInput = document.getElementById('sidebarSearch');
+      if (dropdown && searchInput && e.target !== searchInput && !dropdown.contains(e.target)) {
         dropdown.style.display = 'none';
       }
     });
