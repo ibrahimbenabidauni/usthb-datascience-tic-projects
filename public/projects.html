@@ -304,6 +304,8 @@
           });
         }
         window.currentProjects = uniqueProjects;
+        // Also update the local currentProjects for other functions
+        currentProjects = uniqueProjects;
 
         if (uniqueProjects.length > 0) {
           container.innerHTML = uniqueProjects.map((project, index) => `
@@ -725,10 +727,12 @@
 
     function openEditModal(projectId) {
       editingProjectId = projectId;
-      const projectList = window.currentProjects || [];
-      const project = projectList.find(p => p.id === projectId);
+      // Combine window.currentProjects and local currentProjects as a safety net
+      const projectList = window.currentProjects || currentProjects || [];
+      const project = projectList.find(p => parseInt(p.id) === parseInt(projectId));
       
-      console.log('Editing project:', project);
+      console.log('Attempting to edit project ID:', projectId);
+      console.log('Found project:', project);
       console.log('Current user:', user);
       
       if (!project || (user && parseInt(user.id) !== parseInt(project.author_id))) {
