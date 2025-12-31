@@ -167,6 +167,10 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
         const filePath = `/uploads/${file.filename}`;
         const fileType = file.mimetype;
         const fileSize = file.size;
+        
+        // Log file info for debugging
+        console.log(`Inserting file: ${file.originalname}, size: ${fileSize}, type: ${fileType}`);
+        
         await pool.query(
           `INSERT INTO project_files (project_id, file_path, file_type, file_size) VALUES ($1, $2, $3, $4)`,
           [projectId, filePath, fileType, fileSize]
