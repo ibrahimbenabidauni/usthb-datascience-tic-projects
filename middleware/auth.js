@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 
-export const JWT_SECRET = process.env.JWT_SECRET;
-const OLD_SECRET = 'tic-projects-platform-secret-key-2025'; // fallback secret
+const NEW_SECRET = process.env.JWT_SECRET;
+const OLD_SECRET = 'tic-projects-platform-secret-key-2025'; // fallback
 
 export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -16,20 +16,25 @@ export const authenticateToken = (req, res, next) => {
   }
 
   let decoded = null;
-  for (const secret of [JWT_SECRET, OLD_SECRET]) {
+  let lastError = null;
+
+  for (const secret of [NEW_SECRET, OLD_SECRET]) {
     try {
       decoded = jwt.verify(token, secret);
-      break; // stop at first secret that works
+      console.log(`[FLOW] Token verified with secret: ${secret === NEW_SECRET ? 'NEW_SECRET' : 'OLD_SECRET'}`);
+      break;
     } catch (err) {
-      // ignore and try next
+      console.warn(`[FLOW] Token verification failed with secret ${secret === NEW_SECRET ? 'NEW_SECRET' : 'OLD_SECRET'}: ${err.message}`);
+      lastError = err;
     }
   }
 
   if (!decoded) {
     console.error('[FLOW] Auth Failed: Invalid or expired token');
-    return res.status(403).json({ error: 'Invalid or expired token.' });
+    return res.status(403).json({ error: 'Invalid or expired token.', details: lastError?.message });
   }
 
   req.user = decoded;
+  console.log('[FLOW] Auth Success:', decoded);
   next();
 };
