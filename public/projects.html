@@ -661,47 +661,23 @@
       // Log submission to catch double fires in console
       console.log('Project submission started. Button disabled:', submitBtn.disabled);
 
-      const xhr = new XMLHttpRequest();
+      // Production Verification: Log token state before XHR
+      console.log('[CLIENT VERIFY] Sending token with length:', currentToken ? currentToken.length : 0);
 
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/projects');
+      
+      // MANDATORY: Explicitly set the Bearer token for production
+      xhr.setRequestHeader('Authorization', `Bearer ${currentToken}`);
+      
       xhr.upload.addEventListener('progress', (event) => {
         if (event.lengthComputable) {
           const percent = Math.round((event.loaded / event.total) * 100);
           progressBar.style.width = percent + '%';
           percentageText.textContent = percent + '%';
           if (percent === 100) {
-            statusText.textContent = 'Processing...';
+            statusText.textContent = 'Server processing...';
           }
-        }
-      });
-
-      xhr.addEventListener('load', () => {
-        try {
-          const data = JSON.parse(xhr.responseText);
-          if (xhr.status >= 200 && xhr.status < 300) {
-            messageDiv.className = 'message success';
-            messageDiv.textContent = 'Project submitted successfully!';
-            statusText.textContent = 'Success!';
-            progressBar.style.background = '#10b981';
-            
-            setTimeout(() => {
-              closeModal();
-              loadProjects();
-              // Reset UI
-              submitBtn.disabled = false;
-              submitBtn.textContent = 'Submit Project';
-              progressContainer.style.display = 'none';
-              document.getElementById('fileList').innerHTML = '';
-            }, 1500);
-          } else {
-            throw new Error(data.error || 'Failed to submit project');
-          }
-        } catch (error) {
-          messageDiv.className = 'message error';
-          messageDiv.textContent = error.message;
-          statusText.textContent = 'Upload failed';
-          progressBar.style.background = '#ef4444';
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Submit Project';
         }
       });
 
