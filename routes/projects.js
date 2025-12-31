@@ -180,9 +180,6 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
     const projectId = result.rows[0].id;
 
     if (req.files && req.files.length > 0) {
-      // For memory storage, we need a way to save these files.
-      // Since this is a Replit environment, we'll write them to public/uploads
-      // but the critical change is using memoryStorage to avoid diskStorage conflicts on serverless
       for (const file of req.files) {
         const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9);
         const ext = path.extname(file.originalname);
