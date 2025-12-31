@@ -725,8 +725,9 @@
 
     function openEditModal(projectId) {
       editingProjectId = projectId;
-      // currentProjects is now window.currentProjects from loadProjects()
-      const project = window.currentProjects.find(p => p.id === projectId);
+      // Safety check: ensure window.currentProjects exists and is populated
+      const projectList = window.currentProjects || [];
+      const project = projectList.find(p => p.id === projectId);
       
       if (!project || (user && parseInt(user.id) !== project.author_id)) {
         alert('Unauthorized: You can only edit your own projects');
