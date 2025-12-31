@@ -232,7 +232,7 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
         p.*,
         u.username AS author_name,
         COALESCE(
-          (SELECT JSON_AGG(JSON_BUILD_OBJECT('file_path', file_path, 'file_type', file_type, 'original_name', original_name))
+          (SELECT JSONB_AGG(JSONB_BUILD_OBJECT('file_path', file_path))
            FROM project_files
            WHERE project_id = p.id),
           '[]'::json
