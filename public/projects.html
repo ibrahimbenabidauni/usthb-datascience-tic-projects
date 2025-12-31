@@ -322,7 +322,7 @@
                     ${project.files.map((file, fIdx) => file && file.file_path ? `
                       <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #eee;">
                         <span style="font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">
-                          ${file.file_type && file.file_type.includes('video') ? '🎥' : '📎'} File ${fIdx + 1}
+                          ${file.file_type && file.file_type.includes('video') ? '🎥' : '📎'} ${file.file_path.split('/').pop().replace(/^project-\d+-\d+-/, '')}
                         </span>
                         <a href="${file.file_path}" target="_blank" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">View</a>
                       </div>
@@ -330,9 +330,15 @@
                   </div>
                 </div>
               ` : (project.file_path ? `
-                <a href="${project.file_path}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;color:var(--primary);font-weight:600;margin-bottom:16px;">
-                  📎 View / Download File
-                </a>
+                <div class="project-files" style="margin-bottom: 16px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px;">
+                  <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #666;">Project File:</h4>
+                  <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #eee;">
+                    <span style="font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">
+                      📎 ${project.file_path.split('/').pop().replace(/^project-\d+-\d+-/, '')}
+                    </span>
+                    <a href="${project.file_path}" target="_blank" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">View</a>
+                  </div>
+                </div>
               ` : '')}
 
               <div class="rating-display">
@@ -854,7 +860,7 @@
                     ${project.files.map((file, fIdx) => file && file.file_path ? `
                       <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #eee;">
                         <span style="font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">
-                          ${file.file_type && file.file_type.includes('video') ? '🎥' : '📎'} File ${fIdx + 1}
+                          ${file.file_type && file.file_type.includes('video') ? '🎥' : '📎'} ${file.file_path.split('/').pop().replace(/^project-\d+-\d+-/, '')}
                         </span>
                         <a href="${file.file_path}" target="_blank" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">View</a>
                       </div>
@@ -862,9 +868,15 @@
                   </div>
                 </div>
               ` : (project.file_path ? `
-                <a href="${project.file_path}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;color:var(--primary);font-weight:600;margin-bottom:16px;">
-                  📎 View / Download File
-                </a>
+                <div class="project-files" style="margin-bottom: 16px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px;">
+                  <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #666;">Project File:</h4>
+                  <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #eee;">
+                    <span style="font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">
+                      📎 ${project.file_path.split('/').pop().replace(/^project-\d+-\d+-/, '')}
+                    </span>
+                    <a href="${project.file_path}" target="_blank" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">View</a>
+                  </div>
+                </div>
               ` : '')}
 
               <div class="rating-display">

@@ -67,9 +67,9 @@ router.get("/", async (req, res) => {
         projects.created_at,
         users.username AS author_name,
         users.id AS author_id,
-        project_files.file_path,
         COALESCE(AVG(reviews.rating), 0)::FLOAT as avg_rating,
-        COUNT(reviews.id) as review_count
+        COUNT(DISTINCT reviews.id) as review_count,
+        JSON_AGG(DISTINCT JSONB_BUILD_OBJECT('file_path', project_files.file_path, 'file_type', project_files.file_type)) FILTER (WHERE project_files.file_path IS NOT NULL) as files
       FROM projects
       JOIN users ON users.id = projects.author_id
       LEFT JOIN project_files ON project_files.project_id = projects.id
@@ -92,7 +92,7 @@ router.get("/", async (req, res) => {
       query += " WHERE " + conditions.join(" AND ");
     }
     
-    query += " GROUP BY projects.id, users.username, users.id, project_files.file_path ORDER BY projects.created_at DESC";
+    query += " GROUP BY projects.id, users.username, users.id ORDER BY projects.created_at DESC";
     
     const result = await pool.query(query, params);
     res.json({ projects: result.rows });
