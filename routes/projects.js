@@ -97,7 +97,15 @@ router.get("/", async (req, res) => {
     query += " ORDER BY p.created_at DESC";
 
     const result = await pool.query(query, params);
-    res.json({ projects: result.rows });
+    const projects = result.rows.map(row => {
+      // If files is not an array, make it one
+      if (!Array.isArray(row.files)) {
+        row.files = [];
+      }
+      return row;
+    });
+    console.log(`[DEBUG] GET /projects returning ${projects.length} projects`);
+    res.json({ projects });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to load projects" });

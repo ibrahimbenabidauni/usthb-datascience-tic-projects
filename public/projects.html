@@ -857,6 +857,8 @@
       const section = document.getElementById('filterSection').value;
       const group = document.getElementById('filterGroup').value;
 
+      console.log('[DEBUG] Loading projects via override. Section:', section, 'Group:', group);
+
       let url = '/projects';
       const params = new URLSearchParams();
       if (section) params.append('section', section);
@@ -865,11 +867,21 @@
 
       try {
         const response = await fetch(url);
+        if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
-        currentProjects = data.projects || [];
+        
+        console.log('[DEBUG] Received projects via override:', data.projects);
+        
+        // Ensure data.projects is always an array
+        const projectsFromData = Array.isArray(data.projects) ? data.projects : [];
+        currentProjects = projectsFromData;
+        window.currentProjects = currentProjects;
 
-        if (currentProjects && currentProjects.length > 0) {
-          container.innerHTML = currentProjects.map((project, index) => `
+        if (currentProjects.length > 0) {
+          container.innerHTML = currentProjects.map((project, index) => {
+            if (!project) return '';
+            
+            return `
             <div class="card project-card" style="animation-delay: ${index * 0.1}s">
               <h3>${escapeHtml(project.title)}</h3>
               
@@ -887,31 +899,21 @@
               
               <p>${escapeHtml(project.description)}</p>
 
-              ${project.files && Array.isArray(project.files) ? `
+              ${project.files && Array.isArray(project.files) && project.files.length > 0 && project.files[0] !== null ? `
                 <div class="project-files" style="margin-bottom: 16px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px;">
                   <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #666;">Project Files:</h4>
                   <div style="display: flex; flex-direction: column; gap: 8px;">
                     ${project.files.map((file, fIdx) => file && file.file_path ? `
                       <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #eee;">
                         <span style="font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">
-                          ${file.file_type && file.file_type.includes('video') ? '🎥' : '📎'} ${file.original_name || file.file_path.split('/').pop().replace(/^project-\d+-\d+-/, '')}
+                          ${file.file_type && file.file_type.includes('video') ? '🎥' : '📎'} ${escapeHtml(file.original_name || 'file')}
                         </span>
                         <a href="${file.file_path}" target="_blank" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">View</a>
                       </div>
                     ` : '').join('')}
                   </div>
                 </div>
-              ` : (project.file_path ? `
-                <div class="project-files" style="margin-bottom: 16px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px;">
-                  <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #666;">Project File:</h4>
-                  <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #eee;">
-                    <span style="font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">
-                      📎 ${project.file_path.split('/').pop().replace(/^project-\d+-\d+-/, '')}
-                    </span>
-                    <a href="${project.file_path}" target="_blank" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">View</a>
-                  </div>
-                </div>
-              ` : '')}
+              ` : ''}
 
               <div class="rating-display">
                 <div class="rating-stars">
@@ -922,18 +924,19 @@
               </div>
 
               <div class="project-meta">
-                <span class="project-author">By ${escapeHtml(project.author_name)}</span>
+                <span class="project-author">By ${escapeHtml(project.author_name || 'Unknown')}</span>
                 <span>${formatDate(project.created_at)}</span>
               </div>
 
-              ${token && user && parseInt(user.id) === project.author_id ? `
+              ${token && user && (parseInt(user.id) === parseInt(project.author_id)) ? `
                 <div class="project-actions">
                   <button onclick="openEditModal(${project.id})" class="btn-action btn-edit">✏️ Edit</button>
                   <button onclick="deleteProject(${project.id})" class="btn-action btn-delete">🗑️ Delete</button>
                 </div>
               ` : ''}
             </div>
-          `).join('');
+          `;
+          }).join('');
         } else {
           container.innerHTML = `
             <div class="empty-state" style="grid-column: 1/-1;">
@@ -943,10 +946,11 @@
           `;
         }
       } catch (error) {
+        console.error('Load projects error via override:', error);
         container.innerHTML = `
           <div class="empty-state" style="grid-column: 1/-1;">
             <h3>Error loading projects</h3>
-            <p>Please try again later.</p>
+            <p>Please check your connection and try again.</p>
           </div>
         `;
       }
@@ -1141,6 +1145,9 @@
     document.addEventListener('DOMContentLoaded', () => {
       updateSidebar();
       updateAuthNav();
+      
+      // Explicitly call loadProjects and log it
+      console.log('[DEBUG] Initial loadProjects call from DOMContentLoaded');
       loadProjects();
       
       const projectForm = document.getElementById('projectForm');
