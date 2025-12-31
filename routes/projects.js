@@ -188,13 +188,18 @@ router.post("/", authenticateToken, handleFileUpload, async (req, res) => {
     }
 
     const projectResult = await pool.query(`
-      SELECT projects.*, users.username AS author_name, 
-             JSON_AGG(JSON_BUILD_OBJECT('file_path', project_files.file_path, 'file_type', project_files.file_type)) as files
-      FROM projects
-      JOIN users ON users.id = projects.author_id
-      LEFT JOIN project_files ON project_files.project_id = projects.id
-      WHERE projects.id = $1
-      GROUP BY projects.id, users.username
+      SELECT
+        p.*,
+        u.username AS author_name,
+        COALESCE(
+          (SELECT JSON_AGG(JSON_BUILD_OBJECT('file_path', file_path, 'file_type', file_type, 'original_name', original_name))
+           FROM project_files
+           WHERE project_id = p.id),
+          '[]'::json
+        ) as files
+      FROM projects p
+      JOIN users u ON u.id = p.author_id
+      WHERE p.id = $1
     `, [projectId]);
 
     res.status(201).json({ message: "Project created successfully", project: projectResult.rows[0] });
