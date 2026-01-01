@@ -102,7 +102,7 @@ bcrypt (for password hashing)
 
 JSON Web Tokens (JWT) for auth
 
-Replit deployment
+Vercel deployment
 
 🔹 Contributing
 
