@@ -23,7 +23,12 @@
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
   <nav>
-    <a href="javascript:toggleSidebar()" class="logo" style="cursor: pointer;">TIC Projects</a>
+    <div style="display: flex; align-items: center; gap: 15px;">
+      <a href="javascript:toggleSidebar()" class="logo" style="cursor: pointer;">TIC Projects</a>
+      <button class="theme-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+        <span id="themeIcon">🌙</span>
+      </button>
+    </div>
     <div class="nav-links">
       <a href="/">Home</a>
       <a href="projects.html">Projects</a>
@@ -274,6 +279,22 @@
       window.location.reload();
     }
 
+    function toggleDarkMode() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const newTheme = isDark ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      document.getElementById('themeIcon').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    }
+
+    // Initialize theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    setTimeout(() => {
+      const themeIcon = document.getElementById('themeIcon');
+      if (themeIcon) themeIcon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+    }, 100);
+
     async function loadProjects() {
       const container = document.getElementById('projectsContainer');
       const section = document.getElementById('filterSection').value;
@@ -297,14 +318,18 @@
           container.innerHTML = projectsFromData.map((project, index) => {
             if (!project) return '';
             
+            const isFeatured = parseFloat(project.avg_rating) >= 4.5;
+            const isPopular = parseInt(project.review_count) >= 5;
+            
             return `
             <div class="card project-card" style="animation-delay: ${index * 0.1}s">
-              <h3>${escapeHtml(project.title)}</h3>
-              
               <div class="project-badges">
-                ${project.section ? `<span class="badge badge-section-${project.section.toLowerCase()}">${escapeHtml(project.section)}</span>` : ''}
+                ${isFeatured ? '<span class="badge badge-featured">✨ Top Rated</span>' : ''}
+                ${isPopular ? '<span class="badge badge-popular">🔥 Popular</span>' : ''}
+                ${project.section ? `<span class="badge badge-section-${project.section.toLowerCase()}">Section ${escapeHtml(project.section)}</span>` : ''}
                 ${project.group_number ? `<span class="badge badge-group">Group ${escapeHtml(project.group_number)}</span>` : ''}
               </div>
+              <h3>${escapeHtml(project.title)}</h3>
 
               <div class="project-info">
                 ${project.full_name ? `<div class="project-info-item"><span>By:</span> <span>${escapeHtml(project.full_name)}</span></div>` : ''}

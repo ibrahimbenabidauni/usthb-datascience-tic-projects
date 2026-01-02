@@ -16,6 +16,11 @@
   --gray-500: #6b7280;
   --gray-600: #4b5563;
   --white: #ffffff;
+  --bg-color: #f8fafc;
+  --card-bg: #ffffff;
+  --text-main: #1f2937;
+  --text-muted: #6b7280;
+  --nav-bg: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -26,6 +31,18 @@
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+[data-theme="dark"] {
+  --bg-color: #0f172a;
+  --card-bg: #1e293b;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --dark: #f1f5f9;
+  --gray-100: #1e293b;
+  --gray-200: #334155;
+  --white: #1e293b;
+  --nav-bg: #1e293b;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -34,11 +51,9 @@
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: linear-gradient(-45deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #667eea 75%, #764ba2 100%);
-  background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
+  background: var(--bg-color);
   min-height: 100vh;
-  color: var(--dark);
+  color: var(--text-main);
   line-height: 1.6;
   position: relative;
   overflow-x: hidden;
@@ -47,21 +62,38 @@ body {
 body::before {
   content: '';
   position: fixed;
-  top: -10%;
+  top: 0;
   left: 0;
   width: 100%;
-  height: 120%;
-  pointer-events: none;
-  z-index: 0;
-  background-image: 
-    radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.8), rgba(255,255,255,0)),
-    radial-gradient(2px 2px at 60px 70px, rgba(255,255,255,0.8), rgba(255,255,255,0)),
-    radial-gradient(1px 1px at 50px 50px, rgba(255,255,255,0.8), rgba(255,255,255,0)),
-    radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.8), rgba(255,255,255,0)),
-    radial-gradient(2px 2px at 90px 10px, rgba(255,255,255,0.8), rgba(255,255,255,0));
-  background-repeat: repeat;
-  background-size: 200px 200px;
-  animation: snowfall 15s linear infinite;
+  height: 100%;
+  background: linear-gradient(-45deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #667eea 75%, #764ba2 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  opacity: 0.05;
+  z-index: -1;
+}
+
+[data-theme="dark"] body::before {
+  opacity: 0.15;
+}
+
+.theme-toggle {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: var(--transition);
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(15deg);
 }
 
 @keyframes fadeIn {
@@ -459,12 +491,13 @@ nav .nav-links a:hover {
 }
 
 .card {
-  background: var(--white);
+  background: var(--card-bg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   padding: 24px;
   transition: var(--transition);
-  animation: fadeIn 0.5s ease-out, slideDown 0.6s ease-out;
+  animation: fadeIn 0.5s ease-out;
+  border: 1px solid var(--gray-200);
 }
 
 .card:hover {
@@ -472,32 +505,81 @@ nav .nav-links a:hover {
   box-shadow: var(--shadow-xl);
 }
 
-.project-card {
-  position: relative;
-  overflow: hidden;
-}
-
-.project-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: var(--gradient);
-}
-
 .project-card h3 {
   color: var(--primary);
   font-size: 1.25rem;
   margin-bottom: 8px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .project-card p {
-  color: var(--gray-600);
+  color: var(--text-muted);
   margin-bottom: 16px;
   line-height: 1.6;
+}
+
+.badge-featured {
+  background: var(--gradient);
+  color: white;
+  animation: pulse 2s infinite;
+}
+
+.badge-popular {
+  background: #fdf2f2;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
+}
+
+[data-theme="dark"] .badge-popular {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+@media (max-width: 768px) {
+  .projects-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .container {
+    padding: 16px;
+  }
+  
+  .hero {
+    padding: 60px 16px;
+  }
+  
+  .hero h1 {
+    font-size: 2.5rem;
+  }
+  
+  .nav-links {
+    display: none;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .filter-bar {
+    flex-direction: column;
+  }
+  
+  .filter-bar select {
+    width: 100%;
+  }
+  
+  .project-info {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-content {
+    margin: 10px;
+    width: calc(100% - 20px);
+  }
 }
 
 .badge {
