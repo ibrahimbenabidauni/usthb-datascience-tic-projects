@@ -65,13 +65,7 @@
       <div class="modal-body">
         <div id="editMessage" class="message"></div>
 
-        <form id="editForm" enctype="multipart/form-data">
-          <div class="form-group" style="text-align:center;">
-            <div id="editAvatarPreview" class="profile-avatar-placeholder" style="width:100px;height:100px;font-size:2.5rem;margin:0 auto 16px;cursor:pointer;" onclick="document.getElementById('editAvatar').click()">?</div>
-            <input type="file" id="editAvatar" name="profile_picture" accept="image/*" style="display:none;" onchange="previewAvatar(this)">
-            <p style="font-size:0.875rem;color:var(--gray-500);">Click to change photo</p>
-          </div>
-
+        <form id="editForm">
           <div class="form-group">
             <label for="editUsername">Username</label>
             <input type="text" id="editUsername" name="username" required>
@@ -85,6 +79,11 @@
           <div class="form-group">
             <label for="editBio">Bio</label>
             <textarea id="editBio" name="bio" placeholder="Tell us about yourself..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="editProfilePicture">Profile Picture URL</label>
+            <input type="url" id="editProfilePicture" name="profile_picture" placeholder="https://example.com/image.jpg">
           </div>
 
           <button type="submit" class="btn btn-primary" style="width: 100%;">Save Changes</button>
@@ -113,6 +112,7 @@
     function updateSidebar() {
       const menu = document.getElementById('sidebarMenu');
       const authDiv = document.getElementById('sidebarAuth');
+      if (!menu || !authDiv) return;
       menu.innerHTML = '';
       authDiv.innerHTML = '';
 
@@ -215,9 +215,7 @@
           document.getElementById('editProfileBtn').style.display = 'block';
           loadUserProjectsById(data.user.id);
         } else {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          window.location.href = '/login.html';
+          logout();
         }
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -280,16 +278,7 @@
         document.getElementById('editUsername').value = userData.username;
         document.getElementById('editFullName').value = userData.full_name || '';
         document.getElementById('editBio').value = userData.bio || '';
-        
-        const editPreview = document.getElementById('editAvatarPreview');
-        if (userData.profile_picture) {
-          editPreview.style.backgroundImage = `url(${userData.profile_picture})`;
-          editPreview.style.backgroundSize = 'cover';
-          editPreview.style.backgroundPosition = 'center';
-          editPreview.textContent = '';
-        } else {
-          editPreview.textContent = userData.username.charAt(0).toUpperCase();
-        }
+        document.getElementById('editProfilePicture').value = userData.profile_picture || '';
       }
     }
 
@@ -308,9 +297,9 @@
             
             <p>${escapeHtml(project.description)}</p>
 
-            ${project.file_path ? `
-              <a href="${project.file_path}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;color:var(--primary);font-weight:600;margin-bottom:16px;">
-                📎 View / Download File
+            ${project.drive_link ? `
+              <a href="${project.drive_link}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;color:var(--primary);font-weight:600;margin-bottom:16px;">
+                📂 View Files / Open Drive
               </a>
             ` : ''}
 
@@ -365,32 +354,24 @@
       document.getElementById('editMessage').className = 'message';
     }
 
-    function previewAvatar(input) {
-      if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const preview = document.getElementById('editAvatarPreview');
-          preview.style.backgroundImage = `url(${e.target.result})`;
-          preview.style.backgroundSize = 'cover';
-          preview.style.backgroundPosition = 'center';
-          preview.textContent = '';
-        }
-        reader.readAsDataURL(input.files[0]);
-      }
-    }
-
     document.getElementById('editForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const formData = new FormData(e.target);
       const messageDiv = document.getElementById('editMessage');
+      const formData = {
+        username: document.getElementById('editUsername').value,
+        full_name: document.getElementById('editFullName').value,
+        bio: document.getElementById('editBio').value,
+        profile_picture: document.getElementById('editProfilePicture').value
+      };
 
       try {
         const response = await fetch('/users/me', {
           method: 'PUT',
           headers: {
+            'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: formData
+          body: JSON.stringify(formData)
         });
 
         const data = await response.json();
@@ -398,9 +379,7 @@
         if (response.ok) {
           messageDiv.className = 'message success';
           messageDiv.textContent = 'Profile updated successfully!';
-          
           localStorage.setItem('user', JSON.stringify(data.user));
-          
           setTimeout(() => {
             closeEditModal();
             loadProfile();
@@ -424,19 +403,15 @@
 
     async function searchUsers(query) {
       const dropdown = document.getElementById('searchResultsDropdown');
-      
       if (searchTimeout) clearTimeout(searchTimeout);
-      
       if (query.length < 2) {
         dropdown.style.display = 'none';
         return;
       }
-
       searchTimeout = setTimeout(async () => {
         try {
           const response = await fetch(`/users/search?q=${encodeURIComponent(query)}`);
           const data = await response.json();
-
           if (data.users && data.users.length > 0) {
             dropdown.innerHTML = `
               <div class="card" style="padding: 0; max-height: 300px; overflow-y: auto;">
@@ -456,26 +431,12 @@
             `;
             dropdown.style.display = 'block';
           } else {
-            dropdown.innerHTML = `
-              <div class="card">
-                <p style="text-align:center;color:var(--gray-500);">No users found</p>
-              </div>
-            `;
+            dropdown.innerHTML = `<div class="card"><p style="text-align:center;color:var(--gray-500);">No users found</p></div>`;
             dropdown.style.display = 'block';
           }
-        } catch (error) {
-          dropdown.style.display = 'none';
-        }
+        } catch (error) { dropdown.style.display = 'none'; }
       }, 300);
     }
-
-    document.addEventListener('click', (e) => {
-      const dropdown = document.getElementById('searchResultsDropdown');
-      const searchBar = document.querySelector('.search-bar');
-      if (!searchBar.contains(e.target) && !dropdown.contains(e.target)) {
-        dropdown.style.display = 'none';
-      }
-    });
 
     updateSidebar();
     updateAuthNav();

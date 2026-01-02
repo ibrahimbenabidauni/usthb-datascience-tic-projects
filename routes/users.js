@@ -1,51 +1,8 @@
 import express from "express";
 import pool from "../db/postgres.js";
 import { authenticateToken } from "../middleware/auth.js";
-import multer from "multer";
-import path from "path";
-import fs from "fs";
-import { fileURLToPath } from "url";
 
 const router = express.Router();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const uploadDir = path.join(__dirname, "..", "public", "uploads", "avatars");
-
-// Only create directory on non-Vercel environments
-if (!process.env.VERCEL && !fs.existsSync(uploadDir)) {
-  try {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  } catch (err) {
-    console.warn("Could not create upload directory:", err.message);
-  }
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, "avatar-" + uniqueName + ext);
-  }
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) {
-      return cb(null, true);
-    }
-    cb(new Error("Only image files are allowed"));
-  }
-});
 
 router.get("/search", async (req, res) => {
   try {
@@ -86,9 +43,9 @@ router.get("/me", authenticateToken, async (req, res) => {
   }
 });
 
-router.put("/me", authenticateToken, upload.single("profile_picture"), async (req, res) => {
+router.put("/me", authenticateToken, async (req, res) => {
   try {
-    const { username, full_name, bio } = req.body;
+    const { username, full_name, bio, profile_picture } = req.body;
 
     const currentUserResult = await pool.query("SELECT * FROM users WHERE id = $1", [req.user.id]);
     if (currentUserResult.rows.length === 0) {
@@ -107,11 +64,6 @@ router.put("/me", authenticateToken, upload.single("profile_picture"), async (re
       }
     }
 
-    let profilePicture = currentUser.profile_picture;
-    if (req.file) {
-      profilePicture = `/uploads/avatars/${req.file.filename}`;
-    }
-
     await pool.query(`
       UPDATE users SET username = $1, full_name = $2, bio = $3, profile_picture = $4
       WHERE id = $5
@@ -119,7 +71,7 @@ router.put("/me", authenticateToken, upload.single("profile_picture"), async (re
       username || currentUser.username,
       full_name || currentUser.full_name,
       bio || currentUser.bio,
-      profilePicture,
+      profile_picture || currentUser.profile_picture,
       req.user.id
     ]);
 
@@ -147,14 +99,13 @@ router.get("/:id", async (req, res) => {
     }
 
     const projectsResult = await pool.query(`
-      SELECT projects.*, project_files.file_path,
+      SELECT projects.*,
         COALESCE(AVG(reviews.rating), 0)::FLOAT as avg_rating,
         COUNT(reviews.id) as review_count
       FROM projects
-      LEFT JOIN project_files ON project_files.project_id = projects.id
       LEFT JOIN reviews ON reviews.project_id = projects.id
       WHERE projects.author_id = $1
-      GROUP BY projects.id, project_files.file_path
+      GROUP BY projects.id
       ORDER BY projects.created_at DESC
     `, [req.params.id]);
 
