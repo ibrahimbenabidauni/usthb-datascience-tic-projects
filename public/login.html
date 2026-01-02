@@ -67,7 +67,12 @@
 </head>
 <body>
   <nav>
-    <a href="/" class="logo">TIC Projects</a>
+    <div style="display: flex; align-items: center; gap: 15px;">
+      <a href="/" class="logo">TIC Projects</a>
+      <button class="theme-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+        <span id="themeIcon">🌙</span>
+      </button>
+    </div>
     <div class="nav-links">
       <a href="/">Home</a>
       <a href="/projects.html">Projects</a>
@@ -110,6 +115,22 @@
     if (token) {
       window.location.href = '/projects.html';
     }
+
+    function toggleDarkMode() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const newTheme = isDark ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      document.getElementById('themeIcon').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    }
+
+    // Initialize theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    setTimeout(() => {
+      const themeIcon = document.getElementById('themeIcon');
+      if (themeIcon) themeIcon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+    }, 100);
 
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
