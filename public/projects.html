@@ -145,12 +145,12 @@
         
         <div class="form-group">
           <label>Your Rating</label>
-          <div class="star-rating" id="starRating">
-            <span class="star" data-rating="1">&#9733;</span>
-            <span class="star" data-rating="2">&#9733;</span>
-            <span class="star" data-rating="3">&#9733;</span>
-            <span class="star" data-rating="4">&#9733;</span>
-            <span class="star" data-rating="5">&#9733;</span>
+          <div class="star-rating" id="starRating" style="display: flex; gap: 8px; justify-content: center; font-size: 2rem; margin: 15px 0;">
+            <span class="star" data-rating="1" style="cursor: pointer; color: #d1d5db;">&#9733;</span>
+            <span class="star" data-rating="2" style="cursor: pointer; color: #d1d5db;">&#9733;</span>
+            <span class="star" data-rating="3" style="cursor: pointer; color: #d1d5db;">&#9733;</span>
+            <span class="star" data-rating="4" style="cursor: pointer; color: #d1d5db;">&#9733;</span>
+            <span class="star" data-rating="5" style="cursor: pointer; color: #d1d5db;">&#9733;</span>
           </div>
         </div>
 
@@ -385,13 +385,26 @@
     function updateStarDisplay() {
       const stars = document.querySelectorAll('#starRating .star');
       stars.forEach((star, index) => {
-        star.classList.toggle('active', index < selectedRating);
+        if (index < selectedRating) {
+          star.style.color = '#fbbf24'; // Active yellow
+        } else {
+          star.style.color = '#d1d5db'; // Inactive gray
+        }
       });
     }
 
     document.querySelectorAll('#starRating .star').forEach(star => {
       star.addEventListener('click', () => {
         selectedRating = parseInt(star.dataset.rating);
+        updateStarDisplay();
+      });
+      star.addEventListener('mouseenter', () => {
+        const rating = parseInt(star.dataset.rating);
+        document.querySelectorAll('#starRating .star').forEach((s, i) => {
+          s.style.color = i < rating ? '#fbbf24' : '#d1d5db';
+        });
+      });
+      star.addEventListener('mouseleave', () => {
         updateStarDisplay();
       });
     });
