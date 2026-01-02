@@ -44,9 +44,18 @@ async function initializeSchema() {
         group_number TEXT,
         full_name TEXT,
         matricule TEXT,
+        drive_link TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Add drive_link if it doesn't exist (for existing tables)
+    try {
+      await client.query("ALTER TABLE projects ADD COLUMN IF NOT EXISTS drive_link TEXT");
+      // If we added it, it might be null for old rows. We should probably set a default or handle it.
+    } catch (e) {
+      console.log("drive_link column already exists or error adding it");
+    }
 
     // Create reviews table
     await client.query(`
@@ -61,15 +70,8 @@ async function initializeSchema() {
       )
     `);
 
-    // Create project_files table
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS project_files (
-        id SERIAL PRIMARY KEY,
-        project_id INTEGER NOT NULL REFERENCES projects(id),
-        file_path TEXT NOT NULL,
-        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    // Drop project_files table as it's no longer used
+    await client.query("DROP TABLE IF EXISTS project_files");
 
     client.release();
     console.log('Database schema initialized successfully');
