@@ -324,7 +324,7 @@
               <div class="rating-display" style="margin-top: 15px; display: flex; align-items: center; gap: 10px;">
                 <div class="rating-stars">${renderStars(project.avg_rating || 0)}</div>
                 <span class="rating-count">(${project.review_count || 0})</span>
-                <button onclick="openReviewModal(${project.id}, '${escapeHtml(project.title).replace(/'/g, "\\'")}')" class="btn btn-ghost" style="margin-left:auto; padding: 4px 12px; font-size: 0.85rem; border: 1px solid var(--primary); border-radius: 4px;">Rate Project</button>
+                <button onclick="openReviewModal(${project.id}, '${escapeHtml(project.title).replace(/'/g, "\\'")}')" class="btn btn-ghost" style="margin-left:auto; padding: 6px 14px; font-size: 0.85rem; border: 1.5px solid var(--primary); border-radius: 6px; color: var(--primary); font-weight: 600; background: white;">Rate Project</button>
               </div>
 
               ${token && user && (parseInt(user.id) === parseInt(project.author_id)) ? `
